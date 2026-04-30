@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 43 35% 96%;
+  --foreground: 250 27% 10%;
+  --card: 52 35% 91%;
+  --card-foreground: 250 27% 10%;
+  --muted: 62 20% 86%;
+  --muted-foreground: 74 10% 36%;
+  --border: 55 18% 78%;
+  --primary: 244 36% 9%;
+  --primary-foreground: 0 0% 100%;
+  --success: 119 27% 50%;
+  --warning: 43 60% 51%;
+  --danger: 3 60% 51%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: hsl(var(--background));
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: #f6f3eb;
+  color: hsl(var(--foreground));
+  font-family:
+    Lora, ui-serif, Georgia, Cambria, "Times New Roman", serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgb(213 220 163);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+code,
+pre,
+table {
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app-scenic-bg {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #b8cbcf 0%, #c8d4c8 55%, #c0c197 100%);
+  position: relative;
+  overflow: hidden;
+}
