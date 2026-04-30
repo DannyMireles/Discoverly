@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const requestSchema = z.object({
+  inviteToken: z.string().min(1),
   name: z.string().min(2),
   slug: z.string().min(2),
   timezone: z.string().min(2),
@@ -21,6 +22,11 @@ export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json());
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid company onboarding request." }, { status: 400 });
+  }
+
+  const expectedToken = process.env.COMPANY_INVITE_TOKEN;
+  if (!expectedToken || parsed.data.inviteToken !== expectedToken) {
+    return NextResponse.json({ error: "Invalid invite token." }, { status: 403 });
   }
 
   const supabase = await createSupabaseServerClient();

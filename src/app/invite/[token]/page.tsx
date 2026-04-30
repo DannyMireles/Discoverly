@@ -30,11 +30,16 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
             <Banner title="Invite not found" tone="warning">This token is invalid or has already been accepted.</Banner>
           ) : (
             <>
-              <p className="text-sm text-slate-600">You were invited as {affiliate.name}. Sign in first, then accept the invite.</p>
-              <CopyField label="Your code" value={affiliate.affiliate_promotions?.[0]?.public_code ?? "Pending"} />
-              <CopyField label="Invite token" value={token} />
+              <p className="text-sm text-[#3e4240]">
+                Hi {affiliate.name} — you&apos;ve been invited. Create your account below and your invite
+                will be accepted automatically. If you already have an account, sign in first and then
+                click Accept Invite.
+              </p>
+              <CopyField label="Your promo code" value={affiliate.affiliate_promotions?.[0]?.public_code ?? "Pending"} />
               <div className="grid gap-3 sm:grid-cols-2">
-                <Link href="/auth"><Button variant="secondary" className="w-full">Sign in / create account</Button></Link>
+                <Link href={`/auth?inviteToken=${encodeURIComponent(token)}`}>
+                  <Button className="w-full">Create account &amp; accept</Button>
+                </Link>
                 <AcceptInviteButton inviteToken={token} />
               </div>
             </>

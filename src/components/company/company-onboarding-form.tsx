@@ -13,6 +13,7 @@ export function CompanyOnboardingForm() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
+    inviteToken: "",
     name: "Zenful Cove",
     slug: "ZENCOVE",
     timezone: "America/Chicago",
@@ -64,6 +65,17 @@ export function CompanyOnboardingForm() {
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-5 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <label className="text-sm font-medium text-slate-700">Invite token</label>
+          <Input
+            type="password"
+            value={form.inviteToken}
+            onChange={(event) => update("inviteToken", event.target.value)}
+            placeholder="Enter your invite token"
+            autoComplete="off"
+          />
+          <p className="mt-1 text-xs text-slate-500">Required to create a new company. Contact the platform admin if you don&apos;t have one.</p>
+        </div>
         <div>
           <label className="text-sm font-medium text-slate-700">Company name</label>
           <Input value={form.name} onChange={(event) => update("name", event.target.value)} />

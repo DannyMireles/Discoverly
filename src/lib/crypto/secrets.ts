@@ -33,10 +33,10 @@ export function decryptSecret(payload: string) {
 }
 
 function getEncryptionKey() {
-  const secret = process.env.LODGIFY_KEY_ENCRYPTION_SECRET;
+  // SECRET_ENCRYPTION_KEY is the canonical name; fall back to old name for existing deployments
+  const secret = process.env.SECRET_ENCRYPTION_KEY ?? process.env.LODGIFY_KEY_ENCRYPTION_SECRET;
   if (!secret || secret.length < 32) {
-    throw new Error("Missing LODGIFY_KEY_ENCRYPTION_SECRET. Use at least 32 characters.");
+    throw new Error("Set SECRET_ENCRYPTION_KEY to at least 32 random characters.");
   }
-
   return crypto.createHash("sha256").update(secret).digest();
 }
