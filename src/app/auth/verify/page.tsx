@@ -1,14 +1,8 @@
-import { AuthForm } from "@/components/auth/auth-form";
+import { VerifyOtpForm } from "@/components/auth/verify-otp-form";
 import { Banner } from "@/components/ui/banner";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-export default async function AuthPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ inviteToken?: string; redirectTo?: string }>;
-}) {
-  const params = await searchParams;
-
+export default function AuthVerifyPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="w-full max-w-lg space-y-6">
@@ -19,7 +13,7 @@ export default async function AuthPage({
             <code>.env.local</code>, then restart the dev server.
           </Banner>
         )}
-        <AuthForm inviteToken={params.inviteToken} redirectTo={params.redirectTo} />
+        <VerifyOtpForm />
       </div>
     </main>
   );

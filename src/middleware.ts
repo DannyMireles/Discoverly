@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getSupabasePublishableKey } from "@/lib/supabase/env";
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({
@@ -10,10 +11,10 @@ export async function middleware(request: NextRequest) {
 
   // Only run if Supabase is configured — avoids crashing in fresh dev environments
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) return response;
+  const publishableKey = getSupabasePublishableKey();
+  if (!supabaseUrl || !publishableKey) return response;
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(supabaseUrl, publishableKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

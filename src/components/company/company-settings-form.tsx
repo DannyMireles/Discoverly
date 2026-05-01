@@ -132,7 +132,7 @@ export function CompanySettingsForm({ company }: { company: CurrentCompany }) {
                 Saved
               </span>
             ) : (
-              <span className="text-sm text-slate-500">These values save to Supabase.</span>
+              <span className="text-sm text-slate-500">Click save to apply your changes.</span>
             )}
           </div>
           {message ? <p className="text-sm text-red-600 md:col-span-2">{message}</p> : null}

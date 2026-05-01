@@ -6,6 +6,7 @@ import { Building2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Select } from "@/components/ui/select";
 
 export function CompanyOnboardingForm() {
@@ -67,8 +68,7 @@ export function CompanyOnboardingForm() {
       <CardContent className="grid gap-5 md:grid-cols-2">
         <div className="md:col-span-2">
           <label className="text-sm font-medium text-slate-700">Invite token</label>
-          <Input
-            type="password"
+          <PasswordInput
             value={form.inviteToken}
             onChange={(event) => update("inviteToken", event.target.value)}
             placeholder="Enter your invite token"
