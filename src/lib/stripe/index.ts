@@ -3,9 +3,27 @@ import { requiredEnv } from "@/lib/supabase/server";
 
 const STRIPE_API_VERSION = "2025-08-27.basil" as const;
 
+/**
+ * "live" only on Vercel production deploys; everything else (preview, local, staging) uses test keys.
+ * Override with STRIPE_MODE=live|test if you need to force a mode.
+ */
+export function getStripeMode(): "test" | "live" {
+  const override = process.env.STRIPE_MODE?.toLowerCase();
+  if (override === "live" || override === "test") return override;
+  return process.env.VERCEL_ENV === "production" ? "live" : "test";
+}
+
+function stripeSecretKey() {
+  return requiredEnv(getStripeMode() === "live" ? "STRIPE_SECRET_KEY_LIVE" : "STRIPE_SECRET_KEY_TEST");
+}
+
+function stripeClientId() {
+  return requiredEnv(getStripeMode() === "live" ? "STRIPE_CLIENT_ID_LIVE" : "STRIPE_CLIENT_ID_TEST");
+}
+
 /** Platform Stripe client — used for Connect OAuth and creating affiliate Express accounts. */
 export function createStripeClient() {
-  return new Stripe(requiredEnv("STRIPE_SECRET_KEY"), {
+  return new Stripe(stripeSecretKey(), {
     apiVersion: STRIPE_API_VERSION,
   });
 }
@@ -39,7 +57,7 @@ export async function createAccountLink(accountId: string, refreshUrl: string, r
 }
 
 export async function getStripeConnectOAuthUrl(companyId: string) {
-  const clientId = requiredEnv("STRIPE_CLIENT_ID");
+  const clientId = stripeClientId();
   const url = new URL("https://connect.stripe.com/oauth/authorize");
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", clientId);

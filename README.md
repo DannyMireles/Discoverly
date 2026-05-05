@@ -26,18 +26,25 @@ Open `http://localhost:3000`.
 
 ## Environment Variables
 
-Create `.env.local`:
+Copy `.env.example` to `.env.local` and fill in:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-LODGIFY_API_KEY=
+SECRET_ENCRYPTION_KEY=         # openssl rand -base64 32
+STRIPE_SECRET_KEY_TEST=        # Stripe Dashboard → Developers → API keys (Test mode)
+STRIPE_SECRET_KEY_LIVE=        # Stripe Dashboard → Developers → API keys (Live mode)
+STRIPE_CLIENT_ID_TEST=         # Stripe Dashboard → Connect → Settings (Test mode)
+STRIPE_CLIENT_ID_LIVE=         # Stripe Dashboard → Connect → Settings (Live mode)
+STRIPE_WEBHOOK_SECRET=         # signing secret of your active webhook endpoint
+COMPANY_INVITE_TOKEN=          # openssl rand -base64 24
+CRON_SECRET=                   # openssl rand -base64 32
 ```
 
-Production should store Lodgify API keys in Supabase Vault or encrypted server-side storage. Do not expose Lodgify or Stripe secrets through `NEXT_PUBLIC_` variables.
+Stripe mode is auto-selected: `live` only on Vercel production deploys, `test` everywhere else (preview + local). Set `STRIPE_MODE=test|live` to override.
+
+Per-company Lodgify API keys are stored encrypted in the database, not in env vars. Do not expose Lodgify or Stripe secrets through `NEXT_PUBLIC_` variables.
 
 ## Development Commands
 
@@ -53,10 +60,9 @@ Apply migrations from `supabase/migrations`. The initial migration creates the c
 
 ## Deployment Notes
 
-- Deploy the Next.js app to Vercel.
+- Deploy the Next.js app to Vercel. `vercel.json` registers an hourly cron at `/api/cron/lodgify-sync`; Vercel passes `CRON_SECRET` automatically as `Authorization: Bearer …`.
 - Configure Supabase Auth redirect URLs for the deployed domain.
-- Configure Stripe webhook endpoint at `/api/stripe/webhook`.
-- Run Lodgify sync from Supabase scheduled functions/cron in production.
+- Configure the Stripe webhook endpoint at `/api/stripe/webhook` and subscribe to: `account.updated`, `transfer.reversed`, `transfer.updated`. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
 - Keep payout processing manual-approved for the MVP.
 
 ## Docs
