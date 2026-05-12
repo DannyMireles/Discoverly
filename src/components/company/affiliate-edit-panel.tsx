@@ -22,7 +22,6 @@ type Promotion = {
   affiliate_payout_value: number | string;
   affiliate_payout_base: string;
   status: string;
-  lodgify_setup_status: string;
   internal_notes: string | null;
 };
 
@@ -44,7 +43,6 @@ export function AffiliateEditPanel({
     affiliate_payout_value: Number(promotion?.affiliate_payout_value ?? 10),
     affiliate_payout_base: promotion?.affiliate_payout_base ?? "stay_subtotal",
     promotion_status: promotion?.status ?? "draft",
-    lodgify_setup_status: promotion?.lodgify_setup_status ?? "needs_lodgify_setup",
     internal_notes: promotion?.internal_notes ?? "",
   });
   const [saving, setSaving] = useState(false);
@@ -78,7 +76,6 @@ export function AffiliateEditPanel({
               | "booking_total"
               | "total_minus_taxes_fees",
             status: form.promotion_status as "draft" | "active" | "paused" | "expired" | "error",
-            lodgify_setup_status: form.lodgify_setup_status as "draft" | "needs_lodgify_setup" | "confirmed",
             internal_notes: form.internal_notes || null,
           },
         }),
@@ -144,13 +141,6 @@ export function AffiliateEditPanel({
             <option value="error">Error</option>
           </Select>
         </Field>
-        <Field label="Lodgify setup">
-          <Select value={form.lodgify_setup_status} onChange={(e) => update("lodgify_setup_status", e.target.value)}>
-            <option value="needs_lodgify_setup">Needs Lodgify setup</option>
-            <option value="draft">Draft</option>
-            <option value="confirmed">Confirmed</option>
-          </Select>
-        </Field>
         <Field label="Guest discount type">
           <Select value={form.guest_discount_type} onChange={(e) => update("guest_discount_type", e.target.value)}>
             <option value="percent">Percent</option>
@@ -192,11 +182,6 @@ export function AffiliateEditPanel({
             placeholder="Optional notes for the company team"
           />
         </div>
-        <p className="md:col-span-2 text-xs text-slate-500">
-          The public code and Lodgify promotion name can&apos;t be edited once an affiliate exists — changing them would
-          silently break attribution on prior bookings. Archive the affiliate and create a new one if you need to
-          change either.
-        </p>
         {message ? (
           <p
             className={`md:col-span-2 text-sm ${message.tone === "success" ? "text-emerald-700" : "text-red-600"}`}
@@ -209,7 +194,7 @@ export function AffiliateEditPanel({
             <Save className="h-4 w-4" aria-hidden />
             {saving ? "Saving..." : "Save Changes"}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void remove()} disabled={deleting}>
+          <Button type="button" variant="danger" onClick={() => void remove()} disabled={deleting}>
             <Trash2 className="h-4 w-4" aria-hidden />
             {deleting ? "Deleting..." : "Delete Affiliate"}
           </Button>

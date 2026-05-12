@@ -1,9 +1,9 @@
-import { CopyField } from "@/components/ui/copy-field";
 import { AppShell } from "@/components/layout/app-shell";
 import { Banner } from "@/components/ui/banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResendInviteButton } from "@/components/company/resend-invite-button";
 import { AffiliateEditPanel } from "@/components/company/affiliate-edit-panel";
+import { RotatePromotionPanel } from "@/components/company/rotate-promotion-panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { getCompanyData } from "@/lib/company/data";
@@ -13,7 +13,11 @@ export default async function AffiliateDetailPage({ params }: { params: Promise<
   const { id } = await params;
   const data = await getCompanyData();
   const affiliate = data.affiliates.find((item) => item.id === id);
-  const promotion = data.promotions.find((item) => item.affiliate_id === id);
+  const affiliatePromotions = data.promotions.filter((item) => item.affiliate_id === id);
+  const promotion =
+    affiliatePromotions.find((item) => ["active", "draft", "paused"].includes(item.status as string)) ??
+    affiliatePromotions[0];
+  const historicalPromotions = affiliatePromotions.filter((item) => item.id !== promotion?.id);
   const commissions = data.commissions.filter((item) => item.affiliate_id === id);
   const bookings = data.bookings.filter((item) => item.affiliate_id === id);
 
@@ -31,8 +35,11 @@ export default async function AffiliateDetailPage({ params }: { params: Promise<
                 <Card>
                   <CardHeader><CardTitle>Promotion Setup</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
-                    <CopyField label="Public code" value={promotion.public_code} />
-                    <CopyField label="Lodgify promotion name" value={promotion.lodgify_promotion_name} />
+                    <RotatePromotionPanel
+                      affiliateId={affiliate.id}
+                      currentPublicCode={promotion.public_code}
+                      currentLodgifyPromotionName={promotion.lodgify_promotion_name}
+                    />
                     <ResendInviteButton
                       affiliateId={affiliate.id}
                       alreadyAccepted={Boolean(affiliate.invite_accepted_at)}
@@ -60,10 +67,33 @@ export default async function AffiliateDetailPage({ params }: { params: Promise<
                   affiliate_payout_value: promotion.affiliate_payout_value,
                   affiliate_payout_base: promotion.affiliate_payout_base,
                   status: promotion.status,
-                  lodgify_setup_status: promotion.lodgify_setup_status,
                   internal_notes: promotion.internal_notes,
                 }}
               />
+              {historicalPromotions.length > 0 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Previous promotion codes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <THead>
+                        <TR><TH>Public Code</TH><TH>Lodgify Promotion Name</TH><TH>Status</TH><TH>Expired</TH></TR>
+                      </THead>
+                      <TBody>
+                        {historicalPromotions.map((past) => (
+                          <TR key={past.id}>
+                            <TD>{past.public_code}</TD>
+                            <TD className="font-mono text-xs">{past.lodgify_promotion_name}</TD>
+                            <TD><StatusBadge status={past.status} /></TD>
+                            <TD>{past.expires_at ? formatDate(past.expires_at) : "—"}</TD>
+                          </TR>
+                        ))}
+                      </TBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              ) : null}
             </>
           )}
           <Card>
