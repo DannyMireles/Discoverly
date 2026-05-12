@@ -42,7 +42,13 @@ const STATUS_COLORS: Record<string, string> = {
 
 const tooltipStyle = { borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 8px 24px rgba(0,0,0,0.06)" };
 
-export function RevenueOverTimeChart({ data }: { data: MonthlyRevenuePoint[] }) {
+export function RevenueOverTimeChart({
+  data,
+  onMonthClick,
+}: {
+  data: MonthlyRevenuePoint[];
+  onMonthClick?: (point: MonthlyRevenuePoint) => void;
+}) {
   const hasAny = data.some((p) => p.revenue > 0 || p.commissionsPaid > 0 || p.commissionsAccrued > 0);
   return (
     <Card className="h-full">
@@ -53,7 +59,15 @@ export function RevenueOverTimeChart({ data }: { data: MonthlyRevenuePoint[] }) 
         {hasAny ? (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+              <AreaChart
+                data={data}
+                margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                onClick={(state) => {
+                  const point = state?.activePayload?.[0]?.payload as MonthlyRevenuePoint | undefined;
+                  if (point && onMonthClick) onMonthClick(point);
+                }}
+                style={onMonthClick ? { cursor: "pointer" } : undefined}
+              >
                 <defs>
                   <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={REVENUE_COLOR} stopOpacity={0.45} />
@@ -97,7 +111,13 @@ export function RevenueOverTimeChart({ data }: { data: MonthlyRevenuePoint[] }) 
   );
 }
 
-export function BookingsBarChart({ data }: { data: MonthlyRevenuePoint[] }) {
+export function BookingsBarChart({
+  data,
+  onMonthClick,
+}: {
+  data: MonthlyRevenuePoint[];
+  onMonthClick?: (point: MonthlyRevenuePoint) => void;
+}) {
   const hasAny = data.some((p) => p.bookings > 0);
   return (
     <Card className="h-full">
@@ -108,7 +128,15 @@ export function BookingsBarChart({ data }: { data: MonthlyRevenuePoint[] }) {
         {hasAny ? (
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+              <BarChart
+                data={data}
+                margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                onClick={(state) => {
+                  const point = state?.activePayload?.[0]?.payload as MonthlyRevenuePoint | undefined;
+                  if (point && onMonthClick) onMonthClick(point);
+                }}
+                style={onMonthClick ? { cursor: "pointer" } : undefined}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={32} />
@@ -133,7 +161,13 @@ export function BookingsBarChart({ data }: { data: MonthlyRevenuePoint[] }) {
   );
 }
 
-export function TopAffiliatesChart({ data }: { data: TopAffiliatePoint[] }) {
+export function TopAffiliatesChart({
+  data,
+  onAffiliateClick,
+}: {
+  data: TopAffiliatePoint[];
+  onAffiliateClick?: (point: TopAffiliatePoint) => void;
+}) {
   return (
     <Card className="h-full">
       <CardHeader>
@@ -143,7 +177,16 @@ export function TopAffiliatesChart({ data }: { data: TopAffiliatePoint[] }) {
         {data.length > 0 ? (
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+              <BarChart
+                layout="vertical"
+                data={data}
+                margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+                onClick={(state) => {
+                  const point = state?.activePayload?.[0]?.payload as TopAffiliatePoint | undefined;
+                  if (point && onAffiliateClick) onAffiliateClick(point);
+                }}
+                style={onAffiliateClick ? { cursor: "pointer" } : undefined}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" horizontal={false} />
                 <XAxis
                   type="number"
@@ -182,7 +225,13 @@ export function TopAffiliatesChart({ data }: { data: TopAffiliatePoint[] }) {
   );
 }
 
-export function TopPropertiesChart({ data }: { data: TopPropertyPoint[] }) {
+export function TopPropertiesChart({
+  data,
+  onPropertyClick,
+}: {
+  data: TopPropertyPoint[];
+  onPropertyClick?: (point: TopPropertyPoint) => void;
+}) {
   return (
     <Card className="h-full">
       <CardHeader>
@@ -192,7 +241,16 @@ export function TopPropertiesChart({ data }: { data: TopPropertyPoint[] }) {
         {data.length > 0 ? (
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart layout="vertical" data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+              <BarChart
+                layout="vertical"
+                data={data}
+                margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+                onClick={(state) => {
+                  const point = state?.activePayload?.[0]?.payload as TopPropertyPoint | undefined;
+                  if (point && onPropertyClick) onPropertyClick(point);
+                }}
+                style={onPropertyClick ? { cursor: "pointer" } : undefined}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" horizontal={false} />
                 <XAxis
                   type="number"
@@ -231,7 +289,13 @@ export function TopPropertiesChart({ data }: { data: TopPropertyPoint[] }) {
   );
 }
 
-export function CommissionStatusChart({ data }: { data: CommissionStatusPoint[] }) {
+export function CommissionStatusChart({
+  data,
+  onStatusClick,
+}: {
+  data: CommissionStatusPoint[];
+  onStatusClick?: (point: CommissionStatusPoint) => void;
+}) {
   return (
     <Card className="h-full">
       <CardHeader>
@@ -250,6 +314,11 @@ export function CommissionStatusChart({ data }: { data: CommissionStatusPoint[] 
                   outerRadius={92}
                   paddingAngle={2}
                   stroke="#fff"
+                  onClick={(payload) => {
+                    const point = (payload as unknown as { payload?: CommissionStatusPoint }).payload;
+                    if (point && onStatusClick) onStatusClick(point);
+                  }}
+                  cursor={onStatusClick ? "pointer" : undefined}
                 >
                   {data.map((entry) => (
                     <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "#94a3b8"} />

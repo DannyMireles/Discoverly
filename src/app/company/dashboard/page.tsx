@@ -7,13 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
-import {
-  BookingsBarChart,
-  CommissionStatusChart,
-  RevenueOverTimeChart,
-  TopAffiliatesChart,
-  TopPropertiesChart,
-} from "@/components/dashboard/dashboard-charts";
+import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
+import { DashboardSurface } from "@/components/dashboard/dashboard-surface";
 import { DemoDataButtons } from "@/components/company/demo-data-buttons";
 import { getCompanyData, summarizeCompany } from "@/lib/company/data";
 import {
@@ -22,19 +17,39 @@ import {
   topAffiliatesByRevenue,
   topPropertiesByRevenue,
 } from "@/lib/company/charts";
+import {
+  applyDashboardFilters,
+  parsePeriod,
+  periodMonths,
+  periodSince,
+} from "@/lib/company/filters";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
-export default async function CompanyDashboardPage() {
+export default async function CompanyDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string; affiliate?: string }>;
+}) {
   const data = await getCompanyData();
-  const summary = summarizeCompany(data);
-  const paidMatchedBookings = data.bookings.filter(
+  const params = await searchParams;
+  const period = parsePeriod(params.period);
+  const affiliateId = params.affiliate && params.affiliate !== "all" ? params.affiliate : null;
+  const filtered = applyDashboardFilters(data, {
+    since: periodSince(period),
+    affiliateId,
+  });
+  const summary = summarizeCompany(filtered);
+  const paidMatchedBookings = filtered.bookings.filter(
     (booking) => booking.is_fully_paid && booking.is_affiliate_matched,
   );
 
-  const monthly = monthlyRevenueSeries(data);
-  const topAffiliates = topAffiliatesByRevenue(data);
-  const topProperties = topPropertiesByRevenue(data);
-  const commissionStatus = commissionStatusBreakdown(data);
+  const monthly = monthlyRevenueSeries(filtered, periodMonths(period));
+  const topAffiliates = topAffiliatesByRevenue(filtered);
+  const topProperties = topPropertiesByRevenue(filtered);
+  const commissionStatus = commissionStatusBreakdown(filtered);
+  const affiliateNameById = Object.fromEntries(
+    data.affiliates.map((a) => [a.id as string, a.name as string]),
+  );
 
   return (
     <AppShell
@@ -73,6 +88,14 @@ export default async function CompanyDashboardPage() {
           </Banner>
         ) : null}
 
+        {data.company ? (
+          <DashboardFilters
+            period={period}
+            affiliateId={affiliateId}
+            affiliates={data.affiliates.map((a) => ({ id: a.id as string, name: a.name as string }))}
+          />
+        ) : null}
+
         <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
           <StatCard
             label="Affiliate Revenue Driven"
@@ -105,35 +128,51 @@ export default async function CompanyDashboardPage() {
           />
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-3">
-          <div className="xl:col-span-2">
-            <RevenueOverTimeChart data={monthly} />
-          </div>
-          <BookingsBarChart data={monthly} />
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-2">
-          <TopAffiliatesChart data={topAffiliates} />
-          <TopPropertiesChart data={topProperties} />
-        </section>
-
-        <section>
-          <CommissionStatusChart data={commissionStatus} />
-        </section>
+        <DashboardSurface
+          monthly={monthly}
+          topAffiliates={topAffiliates}
+          topProperties={topProperties}
+          commissionStatus={commissionStatus}
+          bookings={filtered.bookings.map((b) => ({
+            id: b.id as string,
+            lodgify_booking_id: b.lodgify_booking_id ?? null,
+            guest_name: (b.guest_name as string | null) ?? null,
+            arrival: (b.arrival as string | null) ?? null,
+            departure: (b.departure as string | null) ?? null,
+            stay_subtotal: b.stay_subtotal ?? null,
+            amount_paid: b.amount_paid ?? null,
+            promotion_description: (b.promotion_description as string | null) ?? null,
+            affiliate_id: (b.affiliate_id as string | null) ?? null,
+            property_id: b.property_id ?? null,
+            is_fully_paid: Boolean(b.is_fully_paid),
+            is_affiliate_matched: Boolean(b.is_affiliate_matched),
+          }))}
+          commissions={filtered.commissions.map((c) => ({
+            id: c.id as string,
+            affiliate_id: (c.affiliate_id as string | null) ?? null,
+            lodgify_booking_id: c.lodgify_booking_id as string,
+            status: c.status as string,
+            commission_amount: c.commission_amount ?? null,
+            created_at: (c.created_at as string | null) ?? null,
+            eligible_at: (c.eligible_at as string | null) ?? null,
+            paid_at: (c.paid_at as string | null) ?? null,
+          }))}
+          affiliateNameById={affiliateNameById}
+        />
 
         <section className="grid gap-6 xl:grid-cols-2">
           <Card>
             <CardHeader><CardTitle>Affiliates</CardTitle></CardHeader>
             <CardContent className="p-0">
-              {data.affiliates.length === 0 ? (
-                <div className="p-8 text-sm text-slate-500">No affiliates yet.</div>
+              {filtered.affiliates.length === 0 ? (
+                <div className="p-8 text-sm text-slate-500">No affiliates in this filter.</div>
               ) : (
                 <Table>
                   <THead>
                     <TR><TH>Affiliate</TH><TH>Email</TH><TH>Status</TH><TH>Stripe</TH></TR>
                   </THead>
                   <TBody>
-                    {data.affiliates.map((affiliate) => (
+                    {filtered.affiliates.map((affiliate) => (
                       <TR key={affiliate.id}>
                         <TD className="font-medium text-slate-950">{affiliate.name}</TD>
                         <TD>{affiliate.email}</TD>
@@ -150,13 +189,13 @@ export default async function CompanyDashboardPage() {
           <Card>
             <CardHeader><CardTitle>Unmatched Promotions</CardTitle></CardHeader>
             <CardContent className="p-0">
-              {data.unmatchedPromotions.length === 0 ? (
-                <div className="p-8 text-sm text-slate-500">No unmatched Lodgify promotions.</div>
+              {filtered.unmatchedPromotions.length === 0 ? (
+                <div className="p-8 text-sm text-slate-500">No unmatched Lodgify promotions in this filter.</div>
               ) : (
                 <Table>
                   <THead><TR><TH>Promotion</TH><TH>Status</TH><TH>Amount</TH></TR></THead>
                   <TBody>
-                    {data.unmatchedPromotions.map((promotion) => (
+                    {filtered.unmatchedPromotions.map((promotion) => (
                       <TR key={promotion.id}>
                         <TD className="font-mono text-xs">{promotion.promotion_description}</TD>
                         <TD><StatusBadge status={promotion.status} /></TD>
@@ -174,7 +213,7 @@ export default async function CompanyDashboardPage() {
           <CardHeader><CardTitle>Recent Affiliate Bookings</CardTitle></CardHeader>
           <CardContent className="p-0">
             {paidMatchedBookings.length === 0 ? (
-              <div className="p-8 text-sm text-slate-500">No fully paid matched bookings yet.</div>
+              <div className="p-8 text-sm text-slate-500">No fully paid matched bookings in this filter.</div>
             ) : (
               <Table>
                 <THead>

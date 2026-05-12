@@ -18,7 +18,8 @@ export type MonthlyRevenuePoint = {
   commissionsAccrued: number;
 };
 
-export function monthlyRevenueSeries(data: CompanyDataState, months = 6): MonthlyRevenuePoint[] {
+export function monthlyRevenueSeries(data: CompanyDataState, monthsArg = 6): MonthlyRevenuePoint[] {
+  const months = Math.max(1, monthsArg);
   const now = new Date();
   const keys: string[] = [];
   for (let i = months - 1; i >= 0; i -= 1) {
