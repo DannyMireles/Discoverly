@@ -8,10 +8,6 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Discoverly.ai",
   description: "Invite-only affiliate tracking for direct short-term rental bookings.",
-  icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
-    apple: [{ url: "/icon.png", type: "image/png" }],
-  },
 };
 
 export default function RootLayout({
