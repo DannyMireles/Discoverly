@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResendInviteButton } from "@/components/company/resend-invite-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { getCompanyData } from "@/lib/company/data";
@@ -33,7 +34,10 @@ export default async function AffiliateDetailPage({ params }: { params: Promise<
                   <CopyField label="Lodgify promotion name" value={promotion.lodgify_promotion_name} />
                   <div className="flex gap-2">
                     <Button>Mark as Created in Lodgify</Button>
-                    <Button variant="secondary">Resend Invite</Button>
+                    <ResendInviteButton
+                      affiliateId={affiliate.id}
+                      alreadyAccepted={Boolean(affiliate.invite_accepted_at)}
+                    />
                   </div>
                 </CardContent>
               </Card>
