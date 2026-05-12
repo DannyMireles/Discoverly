@@ -4,8 +4,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { Table, TBody, TH, THead, TR } from "@/components/ui/table";
+import { AffiliateRow } from "@/components/company/affiliate-row";
 import { getCompanyData } from "@/lib/company/data";
 
 export default async function AffiliatesPage() {
@@ -33,14 +33,16 @@ export default async function AffiliatesPage() {
                   {data.affiliates.map((affiliate) => {
                     const promotion = data.promotions.find((item) => item.affiliate_id === affiliate.id);
                     return (
-                      <TR key={affiliate.id}>
-                        <TD className="font-medium text-slate-950"><Link href={`/company/affiliates/${affiliate.id}`}>{affiliate.name}</Link></TD>
-                        <TD>{affiliate.email}</TD>
-                        <TD>{promotion?.public_code ?? "Not created"}</TD>
-                        <TD className="font-mono text-xs">{promotion?.lodgify_promotion_name ?? "Not created"}</TD>
-                        <TD><StatusBadge status={affiliate.stripe_connected ? "Connected" : "Needs Stripe"} /></TD>
-                        <TD><StatusBadge status={affiliate.status} /></TD>
-                      </TR>
+                      <AffiliateRow
+                        key={affiliate.id}
+                        affiliateId={affiliate.id}
+                        name={affiliate.name}
+                        email={affiliate.email}
+                        publicCode={promotion?.public_code ?? "Not created"}
+                        lodgifyPromotionName={promotion?.lodgify_promotion_name ?? "Not created"}
+                        stripeConnected={Boolean(affiliate.stripe_connected)}
+                        status={affiliate.status}
+                      />
                     );
                   })}
                 </TBody>
