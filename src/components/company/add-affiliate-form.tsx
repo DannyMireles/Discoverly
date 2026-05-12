@@ -28,6 +28,7 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
   const [saved, setSaved] = useState<{ affiliateId: string; lodgifyPromotionName: string; inviteToken: string; publicCode: string } | null>(null);
   const [message, setMessage] = useState("");
   const [inviteState, setInviteState] = useState<{ sending: boolean; sent: boolean }>({ sending: false, sent: false });
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const generated = useMemo(() => {
     const affiliateSlug = generateAffiliateSlug(name);
@@ -81,20 +82,17 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
   }
 
   async function sendInvite() {
-    if (!saved?.affiliateId) {
-      setMessage("Save the affiliate before sending the invite.");
-      return;
-    }
+    if (!saved?.affiliateId) return;
     setInviteState({ sending: true, sent: false });
+    setInviteError(null);
     try {
       const response = await fetch(`/api/affiliates/${saved.affiliateId}/invite`, { method: "POST" });
       const payload = (await response.json()) as { error?: string; inviteUrl?: string };
       if (!response.ok) throw new Error(payload.error ?? "Failed to send invite.");
       setInviteState({ sending: false, sent: true });
-      setMessage(`Invite emailed to the affiliate. Link: ${payload.inviteUrl ?? ""}`);
     } catch (error) {
       setInviteState({ sending: false, sent: false });
-      setMessage(error instanceof Error ? error.message : "Failed to send invite.");
+      setInviteError(error instanceof Error ? error.message : "Failed to send invite.");
     }
   }
 
@@ -180,22 +178,33 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
           <CardContent className="space-y-4">
             <CopyField label="Public customer code" value={saved?.publicCode ?? (publicCode || generated.code)} />
             <CopyField label="Lodgify promotion name" value={saved?.lodgifyPromotionName ?? generated.lodgifyPromotionName} />
-            <CopyField label="Invite link" value={generated.inviteLink} />
-            <div className="grid gap-2 pt-2">
-              <Button type="button" variant="secondary">Mark as Created in Lodgify</Button>
-              <Button
-                type="button"
-                onClick={() => void sendInvite()}
-                disabled={!saved?.affiliateId || inviteState.sending}
-              >
-                {inviteState.sending
-                  ? "Sending..."
-                  : inviteState.sent
-                    ? "Invite Sent"
-                    : "Send Invite"}
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Button>
-            </div>
+            {saved ? <CopyField label="Invite link" value={generated.inviteLink} /> : null}
+            {saved ? (
+              <div className="grid gap-2 pt-2">
+                <Button
+                  type="button"
+                  onClick={() => void sendInvite()}
+                  disabled={inviteState.sending}
+                >
+                  {inviteState.sending
+                    ? "Sending..."
+                    : inviteState.sent
+                      ? "Invite Sent — Send Again"
+                      : "Send Invite"}
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Button>
+                {inviteState.sent ? (
+                  <p className="text-xs text-emerald-700">Invite emailed to {email || "the affiliate"}.</p>
+                ) : null}
+                {inviteError ? (
+                  <p className="text-xs text-red-600 break-words">{inviteError}</p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="pt-2 text-xs text-slate-500">
+                Save the affiliate to generate the invite link and enable sending.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const DEFAULT_FROM = "Discoverly <invites@discoverly.ai>";
-
 function inviteUrl(token: string) {
   const base =
     process.env.NEXT_PUBLIC_APP_URL ??
@@ -23,10 +21,16 @@ export type SendInviteInput = {
 export async function sendAffiliateInviteEmail(input: SendInviteInput) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not set. Add it to Vercel env vars.");
+    throw new Error("RESEND_API_KEY is not set in Vercel env vars.");
   }
 
-  const from = process.env.INVITE_EMAIL_FROM ?? DEFAULT_FROM;
+  const from = process.env.INVITE_EMAIL_FROM;
+  if (!from) {
+    throw new Error(
+      "INVITE_EMAIL_FROM is not set in Vercel env vars. Set it to a sender address on your verified Resend domain (e.g. 'Discoverly <auth@yourdomain.com>').",
+    );
+  }
+
   const url = inviteUrl(input.inviteToken);
   const resend = new Resend(apiKey);
 
@@ -63,7 +67,8 @@ If you weren't expecting this email, you can safely ignore it.`;
   });
 
   if (error) {
-    throw new Error(error.message ?? "Resend email failed.");
+    const detail = "message" in error ? error.message : JSON.stringify(error);
+    throw new Error(`Resend rejected the email: ${detail}`);
   }
   return { id: data?.id ?? null, url };
 }
