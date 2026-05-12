@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { DemoDataButtons } from "@/components/company/demo-data-buttons";
 import { getCompanyData, summarizeCompany } from "@/lib/company/data";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
@@ -19,12 +20,7 @@ export default async function CompanyDashboardPage() {
     <AppShell
       title="Company Dashboard"
       description="Fully paid, matched Lodgify bookings only."
-      actions={
-        <div className="flex gap-2">
-          <Button variant="secondary">Last 30 days</Button>
-          <Button>Run Sync Now</Button>
-        </div>
-      }
+      actions={data.company ? <DemoDataButtons companyId={data.company.id} /> : null}
     >
       <div className="space-y-8">
         {!data.configured ? (
