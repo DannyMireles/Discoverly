@@ -1,9 +1,9 @@
 import { CopyField } from "@/components/ui/copy-field";
 import { AppShell } from "@/components/layout/app-shell";
 import { Banner } from "@/components/ui/banner";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResendInviteButton } from "@/components/company/resend-invite-button";
+import { AffiliateEditPanel } from "@/components/company/affiliate-edit-panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { getCompanyData } from "@/lib/company/data";
@@ -26,28 +26,45 @@ export default async function AffiliateDetailPage({ params }: { params: Promise<
           {!promotion ? (
             <Banner title="No promotion found" tone="warning">Create or repair this affiliate promotion before syncing Lodgify bookings.</Banner>
           ) : (
-            <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-              <Card>
-                <CardHeader><CardTitle>Promotion Setup</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <CopyField label="Public code" value={promotion.public_code} />
-                  <CopyField label="Lodgify promotion name" value={promotion.lodgify_promotion_name} />
-                  <div className="flex gap-2">
-                    <Button>Mark as Created in Lodgify</Button>
+            <>
+              <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+                <Card>
+                  <CardHeader><CardTitle>Promotion Setup</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    <CopyField label="Public code" value={promotion.public_code} />
+                    <CopyField label="Lodgify promotion name" value={promotion.lodgify_promotion_name} />
                     <ResendInviteButton
                       affiliateId={affiliate.id}
                       alreadyAccepted={Boolean(affiliate.invite_accepted_at)}
                     />
-                  </div>
-                </CardContent>
-              </Card>
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Paid Bookings Driven</p><p className="mt-2 text-2xl font-semibold">{bookings.filter((booking) => booking.is_fully_paid && booking.is_affiliate_matched).length}</p></CardContent></Card>
-                <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Revenue Driven</p><p className="mt-2 text-2xl font-semibold">{formatCurrency(bookings.reduce((sum, booking) => sum + Number(booking.stay_subtotal ?? 0), 0))}</p></CardContent></Card>
-                <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Pending Commission</p><p className="mt-2 text-2xl font-semibold">{formatCurrency(commissions.filter((commission) => commission.status !== "paid").reduce((sum, commission) => sum + Number(commission.commission_amount ?? 0), 0))}</p></CardContent></Card>
-                <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Stripe Status</p><div className="mt-3"><StatusBadge status={affiliate.stripe_connected ? "Connected" : "Needs Stripe"} /></div></CardContent></Card>
+                  </CardContent>
+                </Card>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Paid Bookings Driven</p><p className="mt-2 text-2xl font-semibold">{bookings.filter((booking) => booking.is_fully_paid && booking.is_affiliate_matched).length}</p></CardContent></Card>
+                  <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Revenue Driven</p><p className="mt-2 text-2xl font-semibold">{formatCurrency(bookings.reduce((sum, booking) => sum + Number(booking.stay_subtotal ?? 0), 0))}</p></CardContent></Card>
+                  <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Pending Commission</p><p className="mt-2 text-2xl font-semibold">{formatCurrency(commissions.filter((commission) => commission.status !== "paid").reduce((sum, commission) => sum + Number(commission.commission_amount ?? 0), 0))}</p></CardContent></Card>
+                  <Card><CardContent className="p-6"><p className="text-sm text-muted-foreground">Stripe Status</p><div className="mt-3"><StatusBadge status={affiliate.stripe_connected ? "Connected" : "Needs Stripe"} /></div></CardContent></Card>
+                </div>
               </div>
-            </div>
+              <AffiliateEditPanel
+                affiliate={{
+                  id: affiliate.id,
+                  name: affiliate.name,
+                  email: affiliate.email,
+                  status: affiliate.status,
+                }}
+                promotion={{
+                  guest_discount_type: promotion.guest_discount_type,
+                  guest_discount_value: promotion.guest_discount_value,
+                  affiliate_payout_type: promotion.affiliate_payout_type,
+                  affiliate_payout_value: promotion.affiliate_payout_value,
+                  affiliate_payout_base: promotion.affiliate_payout_base,
+                  status: promotion.status,
+                  lodgify_setup_status: promotion.lodgify_setup_status,
+                  internal_notes: promotion.internal_notes,
+                }}
+              />
+            </>
           )}
           <Card>
             <CardHeader><CardTitle>Affiliate Bookings</CardTitle></CardHeader>
