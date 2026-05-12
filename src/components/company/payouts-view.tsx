@@ -102,7 +102,6 @@ export function PayoutsView({ groups }: { groups: PayoutRow[] }) {
                       <TD><StatusBadge status={isHeld ? "held" : group.status} /></TD>
                       <TD>
                         <div className="flex gap-2">
-                          <Button variant="secondary" className="h-9 min-h-9">Review</Button>
                           <Button variant={isHeld ? "secondary" : "primary"} className="h-9 min-h-9" onClick={() => toggleHold(group.affiliate)}>
                             {isHeld ? "Release Hold" : "Hold"}
                           </Button>

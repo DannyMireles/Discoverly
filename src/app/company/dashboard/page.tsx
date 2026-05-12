@@ -12,6 +12,7 @@ import {
   CommissionStatusChart,
   RevenueOverTimeChart,
   TopAffiliatesChart,
+  TopPropertiesChart,
 } from "@/components/dashboard/dashboard-charts";
 import { DemoDataButtons } from "@/components/company/demo-data-buttons";
 import { getCompanyData, summarizeCompany } from "@/lib/company/data";
@@ -19,6 +20,7 @@ import {
   commissionStatusBreakdown,
   monthlyRevenueSeries,
   topAffiliatesByRevenue,
+  topPropertiesByRevenue,
 } from "@/lib/company/charts";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
@@ -31,6 +33,7 @@ export default async function CompanyDashboardPage() {
 
   const monthly = monthlyRevenueSeries(data);
   const topAffiliates = topAffiliatesByRevenue(data);
+  const topProperties = topPropertiesByRevenue(data);
   const commissionStatus = commissionStatusBreakdown(data);
 
   return (
@@ -109,13 +112,13 @@ export default async function CompanyDashboardPage() {
           <BookingsBarChart data={monthly} />
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-5">
-          <div className="xl:col-span-3">
-            <TopAffiliatesChart data={topAffiliates} />
-          </div>
-          <div className="xl:col-span-2">
-            <CommissionStatusChart data={commissionStatus} />
-          </div>
+        <section className="grid gap-6 xl:grid-cols-2">
+          <TopAffiliatesChart data={topAffiliates} />
+          <TopPropertiesChart data={topProperties} />
+        </section>
+
+        <section>
+          <CommissionStatusChart data={commissionStatus} />
         </section>
 
         <section className="grid gap-6 xl:grid-cols-2">

@@ -66,7 +66,7 @@ export function AppShell({
   const shouldHideNav = hideNav ?? isOnboardingPath(pathname);
 
   return (
-    <div className="min-h-screen bg-background text-[#151421]">
+    <div className="min-h-screen text-[#151421]">
       <div className="app-scenic-bg">
         <div className="mx-auto max-w-[1720px] px-5 pb-12 pt-8 sm:px-8 lg:px-14">
           {!shouldHideNav ? (

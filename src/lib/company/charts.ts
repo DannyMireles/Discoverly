@@ -14,6 +14,8 @@ export type MonthlyRevenuePoint = {
   label: string;
   revenue: number;
   bookings: number;
+  commissionsPaid: number;
+  commissionsAccrued: number;
 };
 
 export function monthlyRevenueSeries(data: CompanyDataState, months = 6): MonthlyRevenuePoint[] {
@@ -24,8 +26,8 @@ export function monthlyRevenueSeries(data: CompanyDataState, months = 6): Monthl
     keys.push(monthKey(d));
   }
 
-  const initial = new Map<string, { revenue: number; bookings: number }>();
-  for (const key of keys) initial.set(key, { revenue: 0, bookings: 0 });
+  const initial = new Map<string, { revenue: number; bookings: number; commissionsPaid: number; commissionsAccrued: number }>();
+  for (const key of keys) initial.set(key, { revenue: 0, bookings: 0, commissionsPaid: 0, commissionsAccrued: 0 });
 
   for (const booking of data.bookings) {
     if (!booking.is_fully_paid || !booking.is_affiliate_matched) continue;
@@ -38,10 +40,50 @@ export function monthlyRevenueSeries(data: CompanyDataState, months = 6): Monthl
     bucket.bookings += 1;
   }
 
+  for (const commission of data.commissions) {
+    const anchor = commission.paid_at ?? commission.eligible_at ?? commission.created_at;
+    if (!anchor) continue;
+    const key = monthKey(new Date(anchor as string));
+    const bucket = initial.get(key);
+    if (!bucket) continue;
+    const amount = Number(commission.commission_amount ?? 0);
+    if (commission.status === "paid") bucket.commissionsPaid += amount;
+    if (["pending", "eligible", "approved", "held"].includes(commission.status as string)) bucket.commissionsAccrued += amount;
+  }
+
   return keys.map((key) => {
-    const value = initial.get(key) ?? { revenue: 0, bookings: 0 };
-    return { month: key, label: monthLabel(key), revenue: Number(value.revenue.toFixed(2)), bookings: value.bookings };
+    const value = initial.get(key) ?? { revenue: 0, bookings: 0, commissionsPaid: 0, commissionsAccrued: 0 };
+    return {
+      month: key,
+      label: monthLabel(key),
+      revenue: Number(value.revenue.toFixed(2)),
+      bookings: value.bookings,
+      commissionsPaid: Number(value.commissionsPaid.toFixed(2)),
+      commissionsAccrued: Number(value.commissionsAccrued.toFixed(2)),
+    };
   });
+}
+
+export type TopPropertyPoint = {
+  propertyId: string;
+  revenue: number;
+  bookings: number;
+};
+
+export function topPropertiesByRevenue(data: CompanyDataState, limit = 5): TopPropertyPoint[] {
+  const byProperty = new Map<string, TopPropertyPoint>();
+  for (const booking of data.bookings) {
+    if (!booking.is_fully_paid || !booking.is_affiliate_matched) continue;
+    const id = booking.property_id ? String(booking.property_id) : "Unknown";
+    const entry = byProperty.get(id) ?? { propertyId: id, revenue: 0, bookings: 0 };
+    entry.revenue += Number(booking.stay_subtotal ?? 0);
+    entry.bookings += 1;
+    byProperty.set(id, entry);
+  }
+  return Array.from(byProperty.values())
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, limit)
+    .map((row) => ({ ...row, revenue: Number(row.revenue.toFixed(2)) }));
 }
 
 export type TopAffiliatePoint = {

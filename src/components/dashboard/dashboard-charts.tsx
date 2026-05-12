@@ -5,6 +5,7 @@ import {
   AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
   Legend,
   Pie,
@@ -15,11 +16,20 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CommissionStatusPoint, MonthlyRevenuePoint, TopAffiliatePoint } from "@/lib/company/charts";
+import type {
+  CommissionStatusPoint,
+  MonthlyRevenuePoint,
+  TopAffiliatePoint,
+  TopPropertyPoint,
+} from "@/lib/company/charts";
 import { formatCurrency } from "@/lib/utils/format";
 
-const ACCENT = "#1e40af";
-const ACCENT_LIGHT = "#3b82f6";
+const REVENUE_COLOR = "#1d4ed8";
+const COMMISSIONS_PAID_COLOR = "#10b981";
+const COMMISSIONS_ACCRUED_COLOR = "#f59e0b";
+const BOOKING_PALETTE = ["#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e"];
+const AFFILIATE_PALETTE = ["#0ea5e9", "#14b8a6", "#10b981", "#84cc16", "#facc15"];
+const PROPERTY_PALETTE = ["#f59e0b", "#fb923c", "#f97316", "#ef4444", "#ec4899"];
 const STATUS_COLORS: Record<string, string> = {
   pending: "#f59e0b",
   eligible: "#3b82f6",
@@ -30,24 +40,35 @@ const STATUS_COLORS: Record<string, string> = {
   clawback_needed: "#dc2626",
 };
 
+const tooltipStyle = { borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 8px 24px rgba(0,0,0,0.06)" };
+
 export function RevenueOverTimeChart({ data }: { data: MonthlyRevenuePoint[] }) {
-  const hasAny = data.some((p) => p.revenue > 0);
+  const hasAny = data.some((p) => p.revenue > 0 || p.commissionsPaid > 0 || p.commissionsAccrued > 0);
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle>Revenue driven (last 6 months)</CardTitle>
+        <CardTitle>Revenue driven vs. commissions (last 6 months)</CardTitle>
       </CardHeader>
       <CardContent>
         {hasAny ? (
-          <div className="h-72">
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <defs>
                   <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={ACCENT} stopOpacity={0.35} />
-                    <stop offset="100%" stopColor={ACCENT} stopOpacity={0.02} />
+                    <stop offset="0%" stopColor={REVENUE_COLOR} stopOpacity={0.45} />
+                    <stop offset="100%" stopColor={REVENUE_COLOR} stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="commPaid" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={COMMISSIONS_PAID_COLOR} stopOpacity={0.55} />
+                    <stop offset="100%" stopColor={COMMISSIONS_PAID_COLOR} stopOpacity={0.05} />
+                  </linearGradient>
+                  <linearGradient id="commAccrued" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={COMMISSIONS_ACCRUED_COLOR} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={COMMISSIONS_ACCRUED_COLOR} stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" />
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis
                   tickFormatter={(value) => `$${Math.round(value / 1000)}k`}
@@ -57,16 +78,19 @@ export function RevenueOverTimeChart({ data }: { data: MonthlyRevenuePoint[] }) 
                   width={64}
                 />
                 <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
+                  formatter={(value: number, name: string) => [formatCurrency(value), labelFor(name)]}
                   labelFormatter={(label) => `Month: ${label}`}
-                  contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb" }}
+                  contentStyle={tooltipStyle}
                 />
-                <Area type="monotone" dataKey="revenue" stroke={ACCENT} strokeWidth={2.5} fill="url(#rev)" />
+                <Legend formatter={(value) => labelFor(String(value))} wrapperStyle={{ fontSize: 12 }} />
+                <Area type="monotone" dataKey="revenue" stroke={REVENUE_COLOR} strokeWidth={2.5} fill="url(#rev)" />
+                <Area type="monotone" dataKey="commissionsAccrued" stroke={COMMISSIONS_ACCRUED_COLOR} strokeWidth={2} fill="url(#commAccrued)" />
+                <Area type="monotone" dataKey="commissionsPaid" stroke={COMMISSIONS_PAID_COLOR} strokeWidth={2} fill="url(#commPaid)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          <EmptyChart message="Once paid affiliate bookings sync, revenue will trend here." />
+          <EmptyChart message="Once paid affiliate bookings sync, revenue and commissions will trend here." />
         )}
       </CardContent>
     </Card>
@@ -85,14 +109,19 @@ export function BookingsBarChart({ data }: { data: MonthlyRevenuePoint[] }) {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} width={32} />
                 <Tooltip
                   formatter={(value: number) => `${value} ${value === 1 ? "booking" : "bookings"}`}
                   labelFormatter={(label) => `Month: ${label}`}
-                  contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb" }}
+                  contentStyle={tooltipStyle}
                 />
-                <Bar dataKey="bookings" fill={ACCENT_LIGHT} radius={[8, 8, 0, 0]} />
+                <Bar dataKey="bookings" radius={[8, 8, 0, 0]}>
+                  {data.map((_, index) => (
+                    <Cell key={index} fill={BOOKING_PALETTE[index % BOOKING_PALETTE.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -115,6 +144,7 @@ export function TopAffiliatesChart({ data }: { data: TopAffiliatePoint[] }) {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart layout="vertical" data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" horizontal={false} />
                 <XAxis
                   type="number"
                   tickFormatter={(value) => `$${Math.round(value / 1000)}k`}
@@ -134,14 +164,67 @@ export function TopAffiliatesChart({ data }: { data: TopAffiliatePoint[] }) {
                   formatter={(value: number, name: string) =>
                     name === "revenue" ? formatCurrency(value) : `${value} bookings`
                   }
-                  contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb" }}
+                  contentStyle={tooltipStyle}
                 />
-                <Bar dataKey="revenue" fill={ACCENT} radius={[0, 8, 8, 0]} />
+                <Bar dataKey="revenue" radius={[0, 8, 8, 0]}>
+                  {data.map((_, index) => (
+                    <Cell key={index} fill={AFFILIATE_PALETTE[index % AFFILIATE_PALETTE.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         ) : (
           <EmptyChart message="No revenue attributed to affiliates yet." />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TopPropertiesChart({ data }: { data: TopPropertyPoint[] }) {
+  return (
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle>Top properties by revenue</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {data.length > 0 ? (
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart layout="vertical" data={data} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(15,23,42,0.06)" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tickFormatter={(value) => `$${Math.round(value / 1000)}k`}
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="propertyId"
+                  width={140}
+                  tick={{ fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  formatter={(value: number, name: string) =>
+                    name === "revenue" ? formatCurrency(value) : `${value} bookings`
+                  }
+                  contentStyle={tooltipStyle}
+                />
+                <Bar dataKey="revenue" radius={[0, 8, 8, 0]}>
+                  {data.map((_, index) => (
+                    <Cell key={index} fill={PROPERTY_PALETTE[index % PROPERTY_PALETTE.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <EmptyChart message="No revenue attributed to properties yet." />
         )}
       </CardContent>
     </Card>
@@ -177,7 +260,7 @@ export function CommissionStatusChart({ data }: { data: CommissionStatusPoint[] 
                     formatCurrency(value),
                     `${(item.payload as CommissionStatusPoint).count} commission(s)`,
                   ]}
-                  contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb" }}
+                  contentStyle={tooltipStyle}
                 />
                 <Legend
                   verticalAlign="bottom"
@@ -206,4 +289,11 @@ function EmptyChart({ message }: { message: string }) {
 
 function formatStatusLabel(status: string) {
   return status.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+function labelFor(key: string) {
+  if (key === "revenue") return "Revenue driven";
+  if (key === "commissionsPaid") return "Commissions paid";
+  if (key === "commissionsAccrued") return "Commissions accrued";
+  return formatStatusLabel(key);
 }

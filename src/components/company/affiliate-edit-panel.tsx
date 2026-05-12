@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import {
+  generateAffiliateSlug,
+  generateLodgifyPromotionName,
+  generatePublicCode,
+  generateShortId,
+} from "@/lib/naming";
 
 type Affiliate = {
   id: string;
@@ -28,18 +34,24 @@ type Promotion = {
 export function AffiliateEditPanel({
   affiliate,
   promotion,
+  companySlug,
 }: {
   affiliate: Affiliate;
   promotion: Promotion | null;
+  companySlug: string;
 }) {
   const router = useRouter();
+  const initialDiscount = {
+    type: (promotion?.guest_discount_type ?? "percent") as "percent" | "fixed",
+    value: Number(promotion?.guest_discount_value ?? 10),
+  };
   const [form, setForm] = useState({
     name: affiliate.name,
     email: affiliate.email,
     status: affiliate.status,
-    guest_discount_type: promotion?.guest_discount_type ?? "percent",
-    guest_discount_value: Number(promotion?.guest_discount_value ?? 10),
-    affiliate_payout_type: promotion?.affiliate_payout_type ?? "percent",
+    guest_discount_type: initialDiscount.type,
+    guest_discount_value: initialDiscount.value,
+    affiliate_payout_type: (promotion?.affiliate_payout_type ?? "percent") as "percent" | "fixed",
     affiliate_payout_value: Number(promotion?.affiliate_payout_value ?? 10),
     affiliate_payout_base: promotion?.affiliate_payout_base ?? "stay_subtotal",
     promotion_status: promotion?.status ?? "draft",
@@ -53,36 +65,103 @@ export function AffiliateEditPanel({
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function discountChanged() {
+    return (
+      form.guest_discount_type !== initialDiscount.type ||
+      Number(form.guest_discount_value) !== initialDiscount.value
+    );
+  }
+
+  async function patchEverythingExceptDiscount() {
+    const response = await fetch(`/api/affiliates/${affiliate.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        affiliate: {
+          name: form.name,
+          email: form.email,
+          status: form.status as "invited" | "active" | "paused" | "archived",
+        },
+        promotion: {
+          affiliate_payout_type: form.affiliate_payout_type,
+          affiliate_payout_value: Number(form.affiliate_payout_value),
+          affiliate_payout_base: form.affiliate_payout_base as
+            | "stay_subtotal"
+            | "booking_total"
+            | "total_minus_taxes_fees",
+          status: form.promotion_status as "draft" | "active" | "paused" | "expired" | "error",
+          internal_notes: form.internal_notes || null,
+        },
+      }),
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) throw new Error(payload.error ?? "Update failed.");
+  }
+
+  async function rotateForNewDiscount() {
+    const affiliateSlug = generateAffiliateSlug(form.name);
+    const newDiscount = { type: form.guest_discount_type, value: Number(form.guest_discount_value) };
+    const newPublicCode = generatePublicCode(form.name, newDiscount);
+    const newLodgifyName = generateLodgifyPromotionName({
+      companySlug,
+      affiliateSlug,
+      guestDiscount: newDiscount,
+      affiliatePayout: { type: form.affiliate_payout_type, value: Number(form.affiliate_payout_value) },
+      shortId: generateShortId(),
+    });
+
+    const ok = window.confirm(
+      [
+        "Changing the guest discount creates a new public code and Lodgify promotion name so historical bookings stay attributed to the old code.",
+        "",
+        `New public code: ${newPublicCode}`,
+        `New Lodgify promotion: ${newLodgifyName}`,
+        "",
+        "You'll need to update the matching promotion in Lodgify to the new name. Continue?",
+      ].join("\n"),
+    );
+    if (!ok) return;
+
+    const response = await fetch(`/api/affiliates/${affiliate.id}/rotate-promotion`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        publicCode: newPublicCode,
+        lodgifyPromotionName: newLodgifyName,
+        newDiscountType: newDiscount.type,
+        newDiscountValue: newDiscount.value,
+      }),
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) throw new Error(payload.error ?? "Rotation failed.");
+  }
+
   async function save() {
     setSaving(true);
     setMessage(null);
     try {
-      const response = await fetch(`/api/affiliates/${affiliate.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          affiliate: {
-            name: form.name,
-            email: form.email,
-            status: form.status as "invited" | "active" | "paused" | "archived",
-          },
-          promotion: {
-            guest_discount_type: form.guest_discount_type as "percent" | "fixed",
-            guest_discount_value: Number(form.guest_discount_value),
-            affiliate_payout_type: form.affiliate_payout_type as "percent" | "fixed",
-            affiliate_payout_value: Number(form.affiliate_payout_value),
-            affiliate_payout_base: form.affiliate_payout_base as
-              | "stay_subtotal"
-              | "booking_total"
-              | "total_minus_taxes_fees",
-            status: form.promotion_status as "draft" | "active" | "paused" | "expired" | "error",
-            internal_notes: form.internal_notes || null,
-          },
-        }),
-      });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Update failed.");
-      setMessage({ tone: "success", text: "Affiliate updated." });
+      const needsRotation = discountChanged();
+      await patchEverythingExceptDiscount();
+      if (needsRotation) {
+        try {
+          await rotateForNewDiscount();
+          setMessage({
+            tone: "success",
+            text: "Affiliate updated and a new promotion code was issued — the previous code is archived.",
+          });
+        } catch (rotationError) {
+          setMessage({
+            tone: "error",
+            text:
+              rotationError instanceof Error
+                ? `Other fields saved, but rotation failed: ${rotationError.message}`
+                : "Other fields saved, but rotation failed.",
+          });
+          return;
+        }
+      } else {
+        setMessage({ tone: "success", text: "Affiliate updated." });
+      }
       router.refresh();
     } catch (error) {
       setMessage({ tone: "error", text: error instanceof Error ? error.message : "Update failed." });
@@ -142,7 +221,10 @@ export function AffiliateEditPanel({
           </Select>
         </Field>
         <Field label="Guest discount type">
-          <Select value={form.guest_discount_type} onChange={(e) => update("guest_discount_type", e.target.value)}>
+          <Select
+            value={form.guest_discount_type}
+            onChange={(e) => update("guest_discount_type", e.target.value as "percent" | "fixed")}
+          >
             <option value="percent">Percent</option>
             <option value="fixed">Fixed USD</option>
           </Select>
@@ -155,7 +237,10 @@ export function AffiliateEditPanel({
           />
         </Field>
         <Field label="Affiliate payout type">
-          <Select value={form.affiliate_payout_type} onChange={(e) => update("affiliate_payout_type", e.target.value)}>
+          <Select
+            value={form.affiliate_payout_type}
+            onChange={(e) => update("affiliate_payout_type", e.target.value as "percent" | "fixed")}
+          >
             <option value="percent">Percent</option>
             <option value="fixed">Fixed USD</option>
           </Select>
@@ -182,6 +267,11 @@ export function AffiliateEditPanel({
             placeholder="Optional notes for the company team"
           />
         </div>
+        {discountChanged() ? (
+          <p className="md:col-span-2 text-xs text-amber-700">
+            Heads up: changing the guest discount will issue a new public code on save and archive the current one.
+          </p>
+        ) : null}
         {message ? (
           <p
             className={`md:col-span-2 text-sm ${message.tone === "success" ? "text-emerald-700" : "text-red-600"}`}

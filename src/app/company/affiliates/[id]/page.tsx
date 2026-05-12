@@ -1,9 +1,9 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { Banner } from "@/components/ui/banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CopyField } from "@/components/ui/copy-field";
 import { ResendInviteButton } from "@/components/company/resend-invite-button";
 import { AffiliateEditPanel } from "@/components/company/affiliate-edit-panel";
-import { RotatePromotionPanel } from "@/components/company/rotate-promotion-panel";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { getCompanyData } from "@/lib/company/data";
@@ -35,11 +35,11 @@ export default async function AffiliateDetailPage({ params }: { params: Promise<
                 <Card>
                   <CardHeader><CardTitle>Promotion Setup</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
-                    <RotatePromotionPanel
-                      affiliateId={affiliate.id}
-                      currentPublicCode={promotion.public_code}
-                      currentLodgifyPromotionName={promotion.lodgify_promotion_name}
-                    />
+                    <CopyField label="Public code" value={promotion.public_code} />
+                    <CopyField label="Lodgify promotion name" value={promotion.lodgify_promotion_name} />
+                    <p className="text-xs text-slate-500">
+                      A new code is auto-issued when you change the guest discount in Edit Affiliate below.
+                    </p>
                     <ResendInviteButton
                       affiliateId={affiliate.id}
                       alreadyAccepted={Boolean(affiliate.invite_accepted_at)}
@@ -54,6 +54,7 @@ export default async function AffiliateDetailPage({ params }: { params: Promise<
                 </div>
               </div>
               <AffiliateEditPanel
+                companySlug={data.company?.slug ?? ""}
                 affiliate={{
                   id: affiliate.id,
                   name: affiliate.name,
