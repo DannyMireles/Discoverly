@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const modifiedSince = new Date(Date.now() - 1000 * 60 * 60 * 25).toISOString();
+  const modifiedSince = new Date(Date.now() - 1000 * 60 * 60 * 50).toISOString();
   const summary: Array<{
     companyId: string;
     name: string;

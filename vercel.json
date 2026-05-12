@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/lodgify-sync",
-      "schedule": "0 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
