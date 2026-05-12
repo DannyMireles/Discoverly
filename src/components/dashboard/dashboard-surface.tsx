@@ -81,22 +81,25 @@ export function DashboardSurface(props: Props) {
         <BookingsBarChart data={props.monthly} onMonthClick={(p) => setDrill({ kind: "month", monthKey: p.month, label: p.label })} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
-        <TopAffiliatesChart
-          data={props.topAffiliates}
-          onAffiliateClick={(p) => setDrill({ kind: "affiliate", affiliateId: p.affiliateId, name: p.name })}
-        />
-        <TopPropertiesChart
-          data={props.topProperties}
-          onPropertyClick={(p) => setDrill({ kind: "property", propertyId: p.propertyId })}
-        />
-      </section>
-
-      <section>
-        <CommissionStatusChart
-          data={props.commissionStatus}
-          onStatusClick={(p) => setDrill({ kind: "status", status: p.status })}
-        />
+      <section className="grid gap-6 xl:grid-cols-5">
+        <div className="xl:col-span-2">
+          <TopAffiliatesChart
+            data={props.topAffiliates}
+            onAffiliateClick={(p) => setDrill({ kind: "affiliate", affiliateId: p.affiliateId, name: p.name })}
+          />
+        </div>
+        <div className="xl:col-span-2">
+          <TopPropertiesChart
+            data={props.topProperties}
+            onPropertyClick={(p) => setDrill({ kind: "property", propertyId: p.propertyId })}
+          />
+        </div>
+        <div className="xl:col-span-1">
+          <CommissionStatusChart
+            data={props.commissionStatus}
+            onStatusClick={(p) => setDrill({ kind: "status", status: p.status })}
+          />
+        </div>
       </section>
 
       <DrilldownModal
@@ -154,38 +157,40 @@ function DrilldownBody({
     .reduce((sum, c) => sum + Number(c.commission_amount ?? 0), 0);
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-3">
+    <div className="space-y-8">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Stat label="Revenue driven" value={formatCurrency(revenue)} />
         <Stat label="Commission accrued" value={formatCurrency(totalCommission)} />
         <Stat label="Commission paid" value={formatCurrency(commissionPaid)} />
       </div>
 
       {drill?.kind !== "status" ? (
-        <Section title={`Bookings (${bookings.length})`}>
+        <Section title={`Bookings · ${bookings.length}`}>
           {bookings.length === 0 ? (
             <EmptyRow message="No bookings in this slice." />
           ) : (
-            <Table maxHeight={360}>
+            <Table maxHeight={420}>
               <THead>
                 <TR>
-                  <TH>Booking</TH>
+                  <TH className="w-32">Booking</TH>
                   <TH>Guest</TH>
                   <TH>Affiliate</TH>
-                  <TH>Stay</TH>
-                  <TH>Subtotal</TH>
-                  <TH>Paid</TH>
+                  <TH className="whitespace-nowrap">Stay</TH>
+                  <TH className="text-right">Subtotal</TH>
+                  <TH className="text-right">Paid</TH>
                 </TR>
               </THead>
               <TBody>
                 {bookings.map((b) => (
                   <TR key={b.id}>
-                    <TD>{b.lodgify_booking_id ?? "—"}</TD>
+                    <TD className="font-mono text-xs text-slate-600">{b.lodgify_booking_id ?? "—"}</TD>
                     <TD>{b.guest_name ?? "—"}</TD>
                     <TD>{b.affiliate_id ? affiliateNameById[b.affiliate_id] ?? "—" : "—"}</TD>
-                    <TD>{formatDate(b.arrival)} – {formatDate(b.departure)}</TD>
-                    <TD>{formatCurrency(Number(b.stay_subtotal ?? 0))}</TD>
-                    <TD>{formatCurrency(Number(b.amount_paid ?? 0))}</TD>
+                    <TD className="whitespace-nowrap text-xs text-slate-600">
+                      {formatDate(b.arrival)} → {formatDate(b.departure)}
+                    </TD>
+                    <TD className="text-right tabular-nums">{formatCurrency(Number(b.stay_subtotal ?? 0))}</TD>
+                    <TD className="text-right tabular-nums">{formatCurrency(Number(b.amount_paid ?? 0))}</TD>
                   </TR>
                 ))}
               </TBody>
@@ -194,18 +199,18 @@ function DrilldownBody({
         </Section>
       ) : null}
 
-      <Section title={`Commissions (${commissions.length})`}>
+      <Section title={`Commissions · ${commissions.length}`}>
         {commissions.length === 0 ? (
           <EmptyRow message="No commissions in this slice." />
         ) : (
-          <Table maxHeight={360}>
+          <Table maxHeight={420}>
             <THead>
               <TR>
                 <TH>Affiliate</TH>
                 <TH>Status</TH>
-                <TH>Amount</TH>
-                <TH>Eligible</TH>
-                <TH>Paid</TH>
+                <TH className="text-right">Amount</TH>
+                <TH className="whitespace-nowrap">Eligible</TH>
+                <TH className="whitespace-nowrap">Paid</TH>
               </TR>
             </THead>
             <TBody>
@@ -215,9 +220,9 @@ function DrilldownBody({
                   <TD>
                     <StatusBadge status={c.status} />
                   </TD>
-                  <TD>{formatCurrency(Number(c.commission_amount ?? 0))}</TD>
-                  <TD>{c.eligible_at ? formatDate(c.eligible_at) : "—"}</TD>
-                  <TD>{c.paid_at ? formatDate(c.paid_at) : "—"}</TD>
+                  <TD className="text-right tabular-nums">{formatCurrency(Number(c.commission_amount ?? 0))}</TD>
+                  <TD className="whitespace-nowrap text-xs text-slate-600">{c.eligible_at ? formatDate(c.eligible_at) : "—"}</TD>
+                  <TD className="whitespace-nowrap text-xs text-slate-600">{c.paid_at ? formatDate(c.paid_at) : "—"}</TD>
                 </TR>
               ))}
             </TBody>
@@ -231,7 +236,7 @@ function DrilldownBody({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-2 text-sm font-semibold text-slate-700">{title}</h3>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">{title}</h3>
       {children}
     </div>
   );
@@ -239,15 +244,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-      <p className="text-[11px] uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-900">{value}</p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-900">{value}</p>
     </div>
   );
 }
 
 function EmptyRow({ message }: { message: string }) {
-  return <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-center text-xs text-slate-500">{message}</p>;
+  return <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">{message}</p>;
 }
 
 function bucketBy<T>(rows: T[], keyOf: (row: T) => string | null): Map<string, T[]> {

@@ -310,8 +310,8 @@ export function CommissionStatusChart({
                   data={data}
                   dataKey="total"
                   nameKey="status"
-                  innerRadius={56}
-                  outerRadius={92}
+                  innerRadius={42}
+                  outerRadius={72}
                   paddingAngle={2}
                   stroke="#fff"
                   onClick={(payload) => {
