@@ -97,7 +97,7 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+    <div className={saved ? "grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]" : "grid gap-6"}>
       <Card>
         <CardHeader>
           <CardTitle>Affiliate Details</CardTitle>
@@ -167,19 +167,19 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
           </div>
         </CardContent>
       </Card>
-      <div className="space-y-6">
-        <Banner title="Create this promotion in Lodgify" tone="warning">
-          The Lodgify promotion name must exactly match this value. This is how paid bookings are attributed.
-        </Banner>
-        <Card>
-          <CardHeader>
-            <CardTitle>Generated Promo Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <CopyField label="Public customer code" value={saved?.publicCode ?? (publicCode || generated.code)} />
-            <CopyField label="Lodgify promotion name" value={saved?.lodgifyPromotionName ?? generated.lodgifyPromotionName} />
-            {saved ? <CopyField label="Invite link" value={generated.inviteLink} /> : null}
-            {saved ? (
+      {saved ? (
+        <div className="space-y-6">
+          <Banner title="Create this promotion in Lodgify" tone="warning">
+            The Lodgify promotion name must exactly match this value. This is how paid bookings are attributed.
+          </Banner>
+          <Card>
+            <CardHeader>
+              <CardTitle>Generated Promo Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CopyField label="Public customer code" value={saved.publicCode} />
+              <CopyField label="Lodgify promotion name" value={saved.lodgifyPromotionName} />
+              <CopyField label="Invite link" value={generated.inviteLink} />
               <div className="grid gap-2 pt-2">
                 <Button
                   type="button"
@@ -200,14 +200,10 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
                   <p className="text-xs text-red-600 break-words">{inviteError}</p>
                 ) : null}
               </div>
-            ) : (
-              <p className="pt-2 text-xs text-slate-500">
-                Save the affiliate to generate the invite link and enable sending.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }
