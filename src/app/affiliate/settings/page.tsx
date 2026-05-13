@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { Banner } from "@/components/ui/banner";
+import { AffiliateStripeConnectBanner } from "@/components/affiliate/stripe-connect-banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getAffiliateData } from "@/lib/company/data";
@@ -11,7 +11,11 @@ export default async function AffiliateSettingsPage() {
     <AppShell title="Affiliate Settings" description="Account profile and Stripe connection." section="affiliate">
       <div className="space-y-6">
         {data.affiliate && !data.affiliate.stripe_connected ? (
-          <Banner title="Your payouts are paused until Stripe is connected." tone="warning">Connect Stripe to receive payouts.</Banner>
+          <AffiliateStripeConnectBanner
+            affiliateId={data.affiliate.id}
+            email={data.affiliate.email}
+            returnPath="/affiliate/settings"
+          />
         ) : null}
         <Card>
           <CardHeader><CardTitle>Profile</CardTitle></CardHeader>

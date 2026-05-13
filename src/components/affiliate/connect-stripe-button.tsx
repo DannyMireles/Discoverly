@@ -9,11 +9,13 @@ export function ConnectStripeButton({
   email,
   className,
   variant = "primary",
+  returnPath = "/affiliate/dashboard",
 }: {
   affiliateId: string;
   email: string;
   className?: string;
   variant?: "primary" | "secondary";
+  returnPath?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +31,8 @@ export function ConnectStripeButton({
         body: JSON.stringify({
           affiliateId,
           email,
-          returnUrl: `${origin}/affiliate/dashboard?stripe=connected`,
-          refreshUrl: `${origin}/affiliate/dashboard?stripe=refresh`,
+          returnUrl: `${origin}${returnPath}?stripe=connected`,
+          refreshUrl: `${origin}${returnPath}?stripe=refresh`,
         }),
       });
       const payload = (await response.json()) as { url?: string; error?: string };

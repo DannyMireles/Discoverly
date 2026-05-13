@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CopyField } from "@/components/ui/copy-field";
 import { AffiliateFilters } from "@/components/affiliate/affiliate-filters";
 import { AffiliateSurface } from "@/components/affiliate/affiliate-surface";
-import { ConnectStripeButton } from "@/components/affiliate/connect-stripe-button";
+import { AffiliateStripeConnectBanner } from "@/components/affiliate/stripe-connect-banner";
 import { getAffiliateData } from "@/lib/company/data";
 import {
   affiliateCommissionStatus,
@@ -22,7 +22,7 @@ import { formatCurrency, formatOrdinalDay } from "@/lib/utils/format";
 export default async function AffiliateDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string }>;
+  searchParams: Promise<{ invite?: string; period?: string }>;
 }) {
   const data = await getAffiliateData();
   const params = await searchParams;
@@ -60,16 +60,11 @@ export default async function AffiliateDashboardPage({
             Accept an invite link to connect your account to an affiliate record.
           </Banner>
         ) : !data.affiliate.stripe_connected ? (
-          <Banner
-            title="Connect Stripe to receive payouts."
-            tone="warning"
-            action={
-              <ConnectStripeButton affiliateId={data.affiliate.id} email={data.affiliate.email} />
-            }
-          >
-            Your earnings keep accruing, but payouts stay paused until Stripe is connected. The connect flow is
-            hosted by Stripe and only takes a couple of minutes.
-          </Banner>
+          <AffiliateStripeConnectBanner
+            affiliateId={data.affiliate.id}
+            email={data.affiliate.email}
+            justAccepted={params.invite === "accepted"}
+          />
         ) : null}
 
         {data.promotion ? (

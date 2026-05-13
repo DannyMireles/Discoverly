@@ -46,8 +46,6 @@ function isOnboardingPath(pathname: string | null) {
 
 export function AppShell({
   children,
-  title,
-  description,
   section = "company",
   actions,
   hideNav,

@@ -1,11 +1,10 @@
 import { BadgeDollarSign, CheckCircle2, Clock } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { Banner } from "@/components/ui/banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { ConnectStripeButton } from "@/components/affiliate/connect-stripe-button";
+import { AffiliateStripeConnectBanner } from "@/components/affiliate/stripe-connect-banner";
 import { getAffiliateData } from "@/lib/company/data";
 import { formatCurrency, formatDate, formatOrdinalDay } from "@/lib/utils/format";
 
@@ -18,13 +17,11 @@ export default async function AffiliatePayoutsPage() {
     <AppShell title="Affiliate Payouts" description="Pending, eligible, and paid earnings." section="affiliate">
       <div className="space-y-6">
         {data.affiliate && !data.affiliate.stripe_connected ? (
-          <Banner
-            title="Your payouts are paused until Stripe is connected."
-            tone="warning"
-            action={<ConnectStripeButton affiliateId={data.affiliate.id} email={data.affiliate.email} />}
-          >
-            You can share your code now, but commissions stay in pending until you finish the Stripe Connect flow.
-          </Banner>
+          <AffiliateStripeConnectBanner
+            affiliateId={data.affiliate.id}
+            email={data.affiliate.email}
+            returnPath="/affiliate/payouts"
+          />
         ) : null}
         <section className="grid gap-5 md:grid-cols-4">
           <StatCard label="Pending" value={formatCurrency(pending)} icon={<Clock className="h-5 w-5" />} tone="amber" />

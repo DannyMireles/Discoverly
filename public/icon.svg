@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title>Discoverly.ai</title>
+  <rect x="56" y="56" width="400" height="400" fill="#ff0a52"/>
+  <rect x="56" y="56" width="58" height="400" fill="#00d7d7"/>
+  <path
+    fill="#ffffff"
+    d="M296 152c-67.9 0-123 49.9-123 111.5S228.1 375 296 375c11.2 0 22.1-1.4 32.4-4l62.2 34.5-16.4-61.7c27.4-20.4 44.8-49.1 44.8-80.3C419 201.9 363.9 152 296 152Zm0 75c22.4 0 40.5 16.3 40.5 36.5S318.4 300 296 300s-40.5-16.3-40.5-36.5S273.6 227 296 227Z"
+  />
+</svg>

@@ -6,6 +6,7 @@ import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConnectStripeButton } from "@/components/affiliate/connect-stripe-button";
+import { AffiliateStripeConnectBanner } from "@/components/affiliate/stripe-connect-banner";
 import { getAffiliateData } from "@/lib/company/data";
 
 export default async function AffiliateOnboardingPage() {
@@ -35,6 +36,14 @@ export default async function AffiliateOnboardingPage() {
             <Banner title="No affiliate profile linked yet" tone="warning">
               Open your invite link to bind this account to your affiliate record.
             </Banner>
+          ) : null}
+          {affiliate && !stripeConnected ? (
+            <AffiliateStripeConnectBanner
+              affiliateId={affiliate.id}
+              email={affiliate.email}
+              justAccepted={inviteAccepted}
+              returnPath="/affiliate/onboarding"
+            />
           ) : null}
           <div className="grid gap-4 md:grid-cols-3">
             <Card>

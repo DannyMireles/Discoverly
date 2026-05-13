@@ -21,7 +21,7 @@ export function AcceptInviteButton({ inviteToken }: { inviteToken: string }) {
       });
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(payload.error ?? "Could not accept invite.");
-      router.push("/affiliate/dashboard");
+      router.push("/affiliate/dashboard?invite=accepted");
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not accept invite.");

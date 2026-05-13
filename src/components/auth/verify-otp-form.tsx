@@ -98,7 +98,7 @@ export function VerifyOtpForm() {
       if (payload.mode === "company-sign-up") {
         router.push("/company/onboarding");
       } else if (payload.mode === "affiliate-sign-up") {
-        router.push("/affiliate/dashboard");
+        router.push("/affiliate/dashboard?invite=accepted");
       } else {
         router.push(payload.redirectTo?.trim() ? payload.redirectTo : "/company/dashboard");
       }
