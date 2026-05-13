@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, CreditCard, KeyRound, Settings } from "lucide-react";
+import { Check, CreditCard, KeyRound, LogOut, Settings } from "lucide-react";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -161,6 +162,20 @@ export function CompanySettingsForm({ company }: { company: CurrentCompany }) {
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-slate-600">Stripe Connect requires live Stripe credentials before redirects and webhook status updates can run.</p>
             <Link href="/company/settings/stripe"><Button>Open Stripe Settings</Button></Link>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-blue-600" aria-hidden />
+              Account
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm leading-6 text-slate-600">
+              Sign out of this browser session and return to the authentication screen.
+            </p>
+            <SignOutButton />
           </CardContent>
         </Card>
       </div>
