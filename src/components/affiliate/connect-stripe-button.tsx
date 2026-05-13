@@ -25,13 +25,16 @@ export function ConnectStripeButton({
     setError(null);
     try {
       const origin = window.location.origin;
+      const callback = new URL("/api/stripe/connect/affiliate/callback", origin);
+      callback.searchParams.set("affiliateId", affiliateId);
+      callback.searchParams.set("returnPath", returnPath);
       const response = await fetch("/api/stripe/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           affiliateId,
           email,
-          returnUrl: `${origin}${returnPath}?stripe=connected`,
+          returnUrl: callback.toString(),
           refreshUrl: `${origin}${returnPath}?stripe=refresh`,
         }),
       });
