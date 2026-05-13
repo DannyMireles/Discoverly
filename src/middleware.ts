@@ -39,6 +39,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  if (request.nextUrl.pathname.startsWith("/company")) {
+    const [{ data: membership }, { data: affiliate }] = await Promise.all([
+      supabase
+        .from("company_users")
+        .select("company_id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("affiliates")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    if (!membership?.company_id && affiliate?.id) {
+      return NextResponse.redirect(new URL("/affiliate/dashboard", request.url));
+    }
+  }
+
   return response;
 }
 

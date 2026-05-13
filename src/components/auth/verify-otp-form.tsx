@@ -36,8 +36,10 @@ async function sendOtpForPayload(payload: OtpFlowPayload) {
   });
 }
 
-async function resolveSignInRoute() {
-  const response = await fetch("/api/auth/resolve-route");
+async function resolveSignInRoute(redirectTo: string | null | undefined) {
+  const search = new URLSearchParams();
+  if (redirectTo?.trim()) search.set("redirectTo", redirectTo.trim());
+  const response = await fetch(`/api/auth/resolve-route?${search.toString()}`);
   const body = (await response.json()) as { route?: string };
   if (!response.ok || !body.route) return "/company/dashboard";
   return body.route;
@@ -107,7 +109,7 @@ export function VerifyOtpForm() {
       } else if (payload.mode === "affiliate-sign-up") {
         router.push("/affiliate/dashboard?invite=accepted");
       } else {
-        router.push(payload.redirectTo?.trim() ? payload.redirectTo : await resolveSignInRoute());
+        router.push(await resolveSignInRoute(payload.redirectTo));
       }
       router.refresh();
     } catch (error) {

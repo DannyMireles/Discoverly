@@ -1,34 +1,15 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/guards";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirectMatchesPostAuthRoute, resolvePostAuthRoute } from "@/lib/auth/resolve-post-auth-route";
 
-export async function GET() {
+export async function GET(request: Request) {
   const { user, response } = await requireUser();
   if (response) return response;
 
-  const supabase = await createSupabaseServerClient();
+  const { searchParams } = new URL(request.url);
+  const postAuthRoute = await resolvePostAuthRoute(user!.id);
+  const redirectTo = searchParams.get("redirectTo");
+  const route = redirectMatchesPostAuthRoute(redirectTo, postAuthRoute) ? redirectTo! : postAuthRoute;
 
-  const { data: membership } = await supabase
-    .from("company_users")
-    .select("company_id")
-    .eq("user_id", user!.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (membership?.company_id) {
-    return NextResponse.json({ route: "/company/dashboard" });
-  }
-
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("id")
-    .eq("user_id", user!.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (affiliate?.id) {
-    return NextResponse.json({ route: "/affiliate/dashboard" });
-  }
-
-  return NextResponse.json({ route: "/company/dashboard" });
+  return NextResponse.json({ route });
 }
