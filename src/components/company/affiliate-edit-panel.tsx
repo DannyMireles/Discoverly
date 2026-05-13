@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
@@ -60,6 +61,11 @@ export function AffiliateEditPanel({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const [pendingRotation, setPendingRotation] = useState<null | {
+    newPublicCode: string;
+    newLodgifyName: string;
+  }>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -98,7 +104,7 @@ export function AffiliateEditPanel({
     if (!response.ok) throw new Error(payload.error ?? "Update failed.");
   }
 
-  async function rotateForNewDiscount() {
+  function previewRotation() {
     const affiliateSlug = generateAffiliateSlug(form.name);
     const newDiscount = { type: form.guest_discount_type, value: Number(form.guest_discount_value) };
     const newPublicCode = generatePublicCode(form.name, newDiscount);
@@ -109,42 +115,40 @@ export function AffiliateEditPanel({
       affiliatePayout: { type: form.affiliate_payout_type, value: Number(form.affiliate_payout_value) },
       shortId: generateShortId(),
     });
+    return { newPublicCode, newLodgifyName };
+  }
 
-    const ok = window.confirm(
-      [
-        "Changing the guest discount creates a new public code and Lodgify promotion name so historical bookings stay attributed to the old code.",
-        "",
-        `New public code: ${newPublicCode}`,
-        `New Lodgify promotion: ${newLodgifyName}`,
-        "",
-        "You'll need to update the matching promotion in Lodgify to the new name. Continue?",
-      ].join("\n"),
-    );
-    if (!ok) return;
-
+  async function runRotation(newPublicCode: string, newLodgifyName: string) {
     const response = await fetch(`/api/affiliates/${affiliate.id}/rotate-promotion`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         publicCode: newPublicCode,
         lodgifyPromotionName: newLodgifyName,
-        newDiscountType: newDiscount.type,
-        newDiscountValue: newDiscount.value,
+        newDiscountType: form.guest_discount_type,
+        newDiscountValue: Number(form.guest_discount_value),
       }),
     });
     const payload = (await response.json()) as { error?: string };
     if (!response.ok) throw new Error(payload.error ?? "Rotation failed.");
   }
 
-  async function save() {
-    setSaving(true);
+  async function startSave() {
     setMessage(null);
+    if (discountChanged()) {
+      setPendingRotation(previewRotation());
+      return;
+    }
+    await commitSave();
+  }
+
+  async function commitSave(rotation?: { newPublicCode: string; newLodgifyName: string }) {
+    setSaving(true);
     try {
-      const needsRotation = discountChanged();
       await patchEverythingExceptDiscount();
-      if (needsRotation) {
+      if (rotation) {
         try {
-          await rotateForNewDiscount();
+          await runRotation(rotation.newPublicCode, rotation.newLodgifyName);
           setMessage({
             tone: "success",
             text: "Affiliate updated and a new promotion code was issued — the previous code is archived.",
@@ -167,11 +171,11 @@ export function AffiliateEditPanel({
       setMessage({ tone: "error", text: error instanceof Error ? error.message : "Update failed." });
     } finally {
       setSaving(false);
+      setPendingRotation(null);
     }
   }
 
-  async function remove() {
-    if (!window.confirm("Delete this affiliate? Affiliates with prior commissions are archived instead.")) return;
+  async function commitRemove() {
     setDeleting(true);
     setMessage(null);
     try {
@@ -188,6 +192,7 @@ export function AffiliateEditPanel({
       setMessage({ tone: "error", text: error instanceof Error ? error.message : "Delete failed." });
     } finally {
       setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   }
 
@@ -280,16 +285,54 @@ export function AffiliateEditPanel({
           </p>
         ) : null}
         <div className="md:col-span-2 flex flex-wrap items-center gap-2">
-          <Button type="button" onClick={() => void save()} disabled={saving}>
+          <Button type="button" onClick={() => void startSave()} disabled={saving}>
             <Save className="h-4 w-4" aria-hidden />
             {saving ? "Saving..." : "Save Changes"}
           </Button>
-          <Button type="button" variant="danger" onClick={() => void remove()} disabled={deleting}>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={deleting}
+          >
             <Trash2 className="h-4 w-4" aria-hidden />
             {deleting ? "Deleting..." : "Delete Affiliate"}
           </Button>
         </div>
       </CardContent>
+      <ConfirmDialog
+        open={pendingRotation !== null}
+        tone="warning"
+        title="Issue a new promotion code?"
+        confirmLabel="Rotate and save"
+        loading={saving}
+        description={
+          pendingRotation ? (
+            <>
+              Changing the guest discount creates a new public code and Lodgify promotion name so historical bookings
+              stay attributed to the old code.
+              {"\n\n"}
+              New public code: <strong>{pendingRotation.newPublicCode}</strong>
+              {"\n"}
+              New Lodgify promotion: <strong>{pendingRotation.newLodgifyName}</strong>
+              {"\n\n"}
+              You&apos;ll need to update the matching promotion in Lodgify to the new name.
+            </>
+          ) : null
+        }
+        onConfirm={() => pendingRotation && void commitSave(pendingRotation)}
+        onCancel={() => setPendingRotation(null)}
+      />
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        tone="danger"
+        title="Delete this affiliate?"
+        confirmLabel="Delete affiliate"
+        loading={deleting}
+        description="Affiliates with prior commissions are archived instead of deleted so historical attribution is preserved."
+        onConfirm={() => void commitRemove()}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </Card>
   );
 }

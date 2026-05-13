@@ -24,14 +24,21 @@ function describeAuthFailure(error: unknown): string {
 export function AuthForm({
   inviteToken,
   redirectTo,
+  lockedEmail,
+  lockedName,
 }: {
   inviteToken?: string;
   redirectTo?: string;
+  lockedEmail?: string;
+  lockedName?: string;
 }) {
-  const [mode, setMode] = useState<OtpAuthMode>(inviteToken ? "affiliate-sign-up" : "sign-in");
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
+  const isInviteFlow = Boolean(inviteToken);
+  const [mode, setMode] = useState<OtpAuthMode>(isInviteFlow ? "affiliate-sign-up" : "sign-in");
+  const [email, setEmail] = useState(lockedEmail ?? "");
+  const [name, setName] = useState(lockedName ?? "");
   const [token, setToken] = useState(inviteToken ?? "");
+  const emailLocked = Boolean(lockedEmail);
+  const nameLocked = Boolean(lockedName);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -100,7 +107,7 @@ export function AuthForm({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {!inviteToken && (
+        {!isInviteFlow && (
           <div className="flex gap-1.5 rounded-full border border-white/60 bg-white/50 p-1">
             {(
               [
@@ -148,7 +155,12 @@ export function AuthForm({
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Smith"
               autoComplete="name"
+              readOnly={nameLocked}
+              className={nameLocked ? "opacity-70" : ""}
             />
+            {nameLocked && (
+              <p className="mt-1 text-xs text-[#525a48]">Pre-filled from your invite.</p>
+            )}
           </div>
         )}
 
@@ -163,10 +175,17 @@ export function AuthForm({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             autoComplete="email"
+            readOnly={emailLocked}
+            className={emailLocked ? "opacity-70" : ""}
           />
+          {emailLocked && (
+            <p className="mt-1 text-xs text-[#525a48]">
+              This invite is bound to this email. Reach out to your host if you need a different one.
+            </p>
+          )}
         </div>
 
-        {mode === "affiliate-sign-up" && (
+        {mode === "affiliate-sign-up" && !isInviteFlow && (
           <div>
             <label htmlFor="auth-invite" className="text-sm font-medium text-[#1f221c]">
               Invite token
@@ -177,22 +196,17 @@ export function AuthForm({
               onChange={(e) => setToken(e.target.value)}
               placeholder="Paste your invite token"
               autoComplete="off"
-              readOnly={Boolean(inviteToken)}
-              className={inviteToken ? "opacity-70" : ""}
             />
-            {inviteToken && (
-              <p className="mt-1 text-xs text-[#525a48]">Pre-filled from your invite link.</p>
-            )}
           </div>
         )}
 
         {message && <p className="text-sm text-red-600">{message}</p>}
 
         <Button type="button" className="w-full" onClick={sendCode} disabled={loading}>
-          {loading ? "Sending…" : "Email me a code"}
+          {loading ? "Sending…" : isInviteFlow ? "Send my sign-in code" : "Email me a code"}
         </Button>
 
-        {mode !== "sign-in" && (
+        {mode !== "sign-in" && !isInviteFlow && (
           <Button type="button" variant="ghost" className="w-full" onClick={() => setMode("sign-in")}>
             I already have an account — Sign in
           </Button>

@@ -1,9 +1,11 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { PayoutsView } from "@/components/company/payouts-view";
 import { getCompanyData } from "@/lib/company/data";
+import { formatOrdinalDay } from "@/lib/utils/format";
 
 export default async function PayoutsPage() {
   const data = await getCompanyData();
+  const payByDay = data.company?.payout_pay_by_day;
   const groups = data.affiliates.map((affiliate) => {
     const commissions = data.commissions.filter((commission) => commission.affiliate_id === affiliate.id);
     return {
@@ -19,7 +21,10 @@ export default async function PayoutsPage() {
   });
 
   return (
-    <AppShell title="Payouts" description="Previous month is paid by the 3rd after manual approval.">
+    <AppShell
+      title="Payouts"
+      description={`Previous month is paid by the ${formatOrdinalDay(payByDay, "set")} after manual approval.`}
+    >
       <PayoutsView groups={groups} />
     </AppShell>
   );

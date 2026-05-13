@@ -46,16 +46,20 @@ export async function getAffiliateData() {
     return { ...state, affiliate: null, promotion: null, bookings: [], commissions: [], payouts: [] };
   }
 
-  const [promotionResult, bookingsResult, commissionsResult, payoutsResult] = await Promise.all([
+  const [promotionResult, bookingsResult, commissionsResult, payoutsResult, companyResult] = await Promise.all([
     supabase.from("affiliate_promotions").select("*").eq("affiliate_id", affiliate.id).limit(1).maybeSingle(),
     supabase.from("affiliate_booking_summary").select("*").eq("affiliate_id", affiliate.id).limit(100),
     supabase.from("commissions").select("*").eq("affiliate_id", affiliate.id).limit(100),
     supabase.from("payouts").select("*").eq("affiliate_id", affiliate.id).limit(100),
+    state.company
+      ? Promise.resolve({ data: state.company })
+      : supabase.from("companies").select("*").eq("id", affiliate.company_id).maybeSingle(),
   ]);
 
   return {
     ...state,
     affiliate,
+    company: (companyResult.data as typeof state.company) ?? state.company,
     promotion: promotionResult.data,
     bookings: bookingsResult.data ?? [],
     commissions: commissionsResult.data ?? [],

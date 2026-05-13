@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { getAffiliateData } from "@/lib/company/data";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { formatCurrency, formatDate, formatOrdinalDay } from "@/lib/utils/format";
 
 export default async function AffiliatePayoutsPage() {
   const data = await getAffiliateData();
@@ -23,7 +23,12 @@ export default async function AffiliatePayoutsPage() {
           <StatCard label="Pending" value={formatCurrency(pending)} icon={<Clock className="h-5 w-5" />} tone="amber" />
           <StatCard label="Eligible" value={formatCurrency(data.commissions.filter((commission) => commission.status === "eligible").reduce((sum, commission) => sum + Number(commission.commission_amount ?? 0), 0))} icon={<BadgeDollarSign className="h-5 w-5" />} />
           <StatCard label="Paid" value={formatCurrency(paid)} icon={<CheckCircle2 className="h-5 w-5" />} tone="green" />
-          <StatCard label="Next Payout Date" value="3rd" detail="Monthly review" tone="slate" />
+          <StatCard
+            label="Next Payout Date"
+            value={formatOrdinalDay(data.company?.payout_pay_by_day ?? null, "—")}
+            detail="Monthly review"
+            tone="slate"
+          />
         </section>
         <Card>
           <CardHeader><CardTitle>Commission History</CardTitle></CardHeader>
