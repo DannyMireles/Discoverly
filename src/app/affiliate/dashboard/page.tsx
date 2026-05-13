@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CopyField } from "@/components/ui/copy-field";
 import { AffiliateFilters } from "@/components/affiliate/affiliate-filters";
 import { AffiliateSurface } from "@/components/affiliate/affiliate-surface";
+import { ConnectStripeButton } from "@/components/affiliate/connect-stripe-button";
 import { getAffiliateData } from "@/lib/company/data";
 import {
   affiliateCommissionStatus,
@@ -62,9 +63,12 @@ export default async function AffiliateDashboardPage({
           <Banner
             title="Connect Stripe to receive payouts."
             tone="warning"
-            action={<Button>Connect Stripe</Button>}
+            action={
+              <ConnectStripeButton affiliateId={data.affiliate.id} email={data.affiliate.email} />
+            }
           >
-            Your earnings will be tracked, but payouts are paused until Stripe is connected.
+            Your earnings keep accruing, but payouts stay paused until Stripe is connected. The connect flow is
+            hosted by Stripe and only takes a couple of minutes.
           </Banner>
         ) : null}
 
