@@ -6,6 +6,7 @@ import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CopyField } from "@/components/ui/copy-field";
+import { AffiliateDemoDataButtons } from "@/components/affiliate/affiliate-demo-data-buttons";
 import { AffiliateFilters } from "@/components/affiliate/affiliate-filters";
 import { AffiliateSurface } from "@/components/affiliate/affiliate-surface";
 import { AffiliateStripeConnectBanner } from "@/components/affiliate/stripe-connect-banner";
@@ -45,6 +46,7 @@ export default async function AffiliateDashboardPage({
       title="Affiliate Dashboard"
       description="Revenue, paid bookings, and pending earnings."
       section="affiliate"
+      actions={data.affiliate && data.promotion ? <AffiliateDemoDataButtons /> : null}
     >
       <div className="space-y-8">
         {!data.user ? (
