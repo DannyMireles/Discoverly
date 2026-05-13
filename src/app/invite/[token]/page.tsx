@@ -72,7 +72,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
             <AuthForm
               inviteToken={token}
               lockedEmail={affiliate.email}
-              lockedName={affiliate.name}
+              initialName={affiliate.name}
             />
           </>
         )}

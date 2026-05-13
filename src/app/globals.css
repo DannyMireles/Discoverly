@@ -83,3 +83,72 @@ table {
   position: relative;
   z-index: 1;
 }
+
+.auth-scene {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(128deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0) 34%),
+    linear-gradient(148deg, #d4e9e3 0%, #eef1df 43%, #e9d8b0 100%);
+}
+
+.auth-scene::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: -2;
+  background:
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.34) 0 1px, rgba(255, 255, 255, 0) 1px 44px),
+    linear-gradient(115deg, rgba(0, 215, 215, 0.18), rgba(0, 215, 215, 0) 34%),
+    linear-gradient(292deg, rgba(255, 10, 82, 0) 42%, rgba(255, 10, 82, 0.16) 68%, rgba(255, 10, 82, 0) 82%);
+  animation: auth-drift 18s ease-in-out infinite alternate;
+}
+
+.auth-scene::after {
+  content: "";
+  position: absolute;
+  top: -18%;
+  bottom: -18%;
+  left: 54%;
+  z-index: -1;
+  width: min(48rem, 72vw);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0)),
+    linear-gradient(22deg, rgba(255, 255, 255, 0), rgba(0, 215, 215, 0.20) 42%, rgba(255, 10, 82, 0.14) 100%);
+  box-shadow: -44px 0 90px rgba(45, 79, 76, 0.10);
+  transform: translateX(-50%) skewX(-16deg);
+  animation: auth-panel 14s ease-in-out infinite alternate;
+}
+
+.auth-scene-content {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes auth-drift {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(2%, 1.5%, 0) scale(1.03);
+  }
+}
+
+@keyframes auth-panel {
+  from {
+    transform: translateX(-52%) skewX(-16deg);
+  }
+
+  to {
+    transform: translateX(-47%) skewX(-13deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-scene::before,
+  .auth-scene::after {
+    animation: none;
+  }
+}

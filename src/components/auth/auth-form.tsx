@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,20 +24,19 @@ export function AuthForm({
   inviteToken,
   redirectTo,
   lockedEmail,
-  lockedName,
+  initialName,
 }: {
   inviteToken?: string;
   redirectTo?: string;
   lockedEmail?: string;
-  lockedName?: string;
+  initialName?: string;
 }) {
   const isInviteFlow = Boolean(inviteToken);
-  const [mode, setMode] = useState<OtpAuthMode>(isInviteFlow ? "affiliate-sign-up" : "sign-in");
+  const mode: OtpAuthMode = isInviteFlow ? "affiliate-sign-up" : "sign-in";
   const [email, setEmail] = useState(lockedEmail ?? "");
-  const [name, setName] = useState(lockedName ?? "");
-  const [token, setToken] = useState(inviteToken ?? "");
+  const [name, setName] = useState(initialName ?? "");
+  const token = inviteToken ?? "";
   const emailLocked = Boolean(lockedEmail);
-  const nameLocked = Boolean(lockedName);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -101,47 +99,15 @@ export function AuthForm({
       <CardHeader>
         <CardTitle>
           {mode === "sign-in" && "Sign in"}
-          {mode === "company-sign-up" && "Create company admin"}
           {mode === "affiliate-sign-up" && "Accept affiliate invite"}
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {!isInviteFlow && (
-          <div className="flex gap-1.5 rounded-full border border-white/60 bg-white/50 p-1">
-            {(
-              [
-                { id: "sign-in" as const, label: "Sign in", icon: null },
-                { id: "company-sign-up" as const, label: "Company", icon: Building2 },
-                { id: "affiliate-sign-up" as const, label: "Affiliate", icon: Users },
-              ] as const
-            ).map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  setMode(id);
-                  setMessage("");
-                }}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-2 text-sm font-bold transition-all duration-200 ${
-                  mode === id
-                    ? "bg-white text-[#0d0c21] shadow-[0_8px_20px_rgba(22,21,36,0.12)]"
-                    : "text-[#3e4240] hover:bg-white/70"
-                }`}
-              >
-                {Icon && <Icon className="h-3.5 w-3.5" aria-hidden />}
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-
         <p className="text-sm leading-6 text-[#525a48]">
           {mode === "sign-in" && "We’ll email you a short code. No password and no links—just type the digits."}
-          {mode === "company-sign-up" &&
-            "Create your admin account with a one-time code, then finish onboarding (Lodgify, Stripe, invite token) on the next screens."}
           {mode === "affiliate-sign-up" &&
-            "Use the invite token from your host. We’ll send a code to your email to confirm it’s you."}
+            "Confirm your name and email. We’ll send a code to verify it’s you, then activate your affiliate account."}
         </p>
 
         {mode !== "sign-in" && (
@@ -155,11 +121,9 @@ export function AuthForm({
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Smith"
               autoComplete="name"
-              readOnly={nameLocked}
-              className={nameLocked ? "opacity-70" : ""}
             />
-            {nameLocked && (
-              <p className="mt-1 text-xs text-[#525a48]">Pre-filled from your invite.</p>
+            {initialName && (
+              <p className="mt-1 text-xs text-[#525a48]">Pre-filled from your invite. Update it if needed.</p>
             )}
           </div>
         )}
@@ -185,32 +149,11 @@ export function AuthForm({
           )}
         </div>
 
-        {mode === "affiliate-sign-up" && !isInviteFlow && (
-          <div>
-            <label htmlFor="auth-invite" className="text-sm font-medium text-[#1f221c]">
-              Invite token
-            </label>
-            <Input
-              id="auth-invite"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Paste your invite token"
-              autoComplete="off"
-            />
-          </div>
-        )}
-
         {message && <p className="text-sm text-red-600">{message}</p>}
 
         <Button type="button" className="w-full" onClick={sendCode} disabled={loading}>
           {loading ? "Sending…" : isInviteFlow ? "Send my sign-in code" : "Email me a code"}
         </Button>
-
-        {mode !== "sign-in" && !isInviteFlow && (
-          <Button type="button" variant="ghost" className="w-full" onClick={() => setMode("sign-in")}>
-            I already have an account — Sign in
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

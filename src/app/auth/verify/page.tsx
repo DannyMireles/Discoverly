@@ -4,8 +4,8 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 export default function AuthVerifyPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-6">
-      <div className="w-full max-w-lg space-y-6">
+    <main className="auth-scene flex min-h-screen items-center justify-center p-6">
+      <div className="auth-scene-content w-full max-w-lg space-y-6">
         {!isSupabaseConfigured() && (
           <Banner title="Supabase is not configured" tone="warning">
             Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
