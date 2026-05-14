@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TBody, TH, THead, TR } from "@/components/ui/table";
 import { AffiliateRow } from "@/components/company/affiliate-row";
+import { GenericInviteLinkCard } from "@/components/company/generic-invite-link-card";
 import { getCompanyData } from "@/lib/company/data";
 
 export default async function AffiliatesPage() {
@@ -21,6 +22,7 @@ export default async function AffiliatesPage() {
         {!data.company ? (
           <Banner title="Company onboarding required" tone="warning" action={<Link href="/company/onboarding"><Button>Start Onboarding</Button></Link>}>Create Zenful Cove before adding affiliates.</Banner>
         ) : null}
+        {data.company ? <GenericInviteLinkCard companySlug={data.company.slug} /> : null}
         <Card>
           <CardHeader><CardTitle>All Affiliates</CardTitle></CardHeader>
           <CardContent className="p-0">

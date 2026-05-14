@@ -32,6 +32,11 @@ Copy `.env.example` to `.env.local` and fill in:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
+NEXT_PUBLIC_APP_URL=           # deployed app base URL used in emails
+RESEND_API_KEY=                # sends affiliate invites and owner notifications
+INVITE_EMAIL_FROM=             # verified Resend sender
+OWNER_NOTIFICATION_EMAIL_FROM= # optional sender for owner notifications
+NEXT_PUBLIC_LODGIFY_PROMOTIONS_URL=https://app.lodgify.com
 SECRET_ENCRYPTION_KEY=         # openssl rand -base64 32
 STRIPE_SECRET_KEY_TEST=        # Stripe Dashboard → Developers → API keys (Test mode)
 STRIPE_SECRET_KEY_LIVE=        # Stripe Dashboard → Developers → API keys (Live mode)

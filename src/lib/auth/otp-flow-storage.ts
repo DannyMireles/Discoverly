@@ -1,12 +1,17 @@
 export const OTP_FLOW_STORAGE_KEY = "discoverly_otp_auth";
 
-export type OtpAuthMode = "sign-in" | "company-sign-up" | "affiliate-sign-up";
+export type OtpAuthMode =
+  | "sign-in"
+  | "company-sign-up"
+  | "affiliate-sign-up"
+  | "public-affiliate-sign-up";
 
 export type OtpFlowPayload = {
   email: string;
   mode: OtpAuthMode;
   fullName: string;
   inviteToken: string;
+  companySlug?: string | null;
   redirectTo: string | null;
 };
 

@@ -1,14 +1,8 @@
 import { Resend } from "resend";
+import { buildAppUrl } from "@/lib/url/app-url";
 
 function inviteUrl(token: string) {
-  const base =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000");
-  return `${base.replace(/\/$/, "")}/invite/${token}`;
+  return buildAppUrl(`/invite/${token}`);
 }
 
 export type SendInviteInput = {

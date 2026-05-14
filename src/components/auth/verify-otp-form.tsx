@@ -102,11 +102,30 @@ export function VerifyOtpForm() {
         if (!response.ok) throw new Error(body.error ?? "Could not link your invite.");
       }
 
+      if (payload.mode === "public-affiliate-sign-up") {
+        if (!payload.companySlug?.trim()) {
+          throw new Error("Affiliate program is missing. Open the affiliate signup link again.");
+        }
+        const response = await fetch("/api/public-affiliate-signups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            companySlug: payload.companySlug.trim(),
+            name: payload.fullName,
+          }),
+        });
+        const body = (await response.json()) as { error?: string };
+        if (!response.ok) throw new Error(body.error ?? "Could not create your affiliate account.");
+      }
+
       clearOtpFlowPayload();
 
       if (payload.mode === "company-sign-up") {
         router.push("/company/onboarding");
-      } else if (payload.mode === "affiliate-sign-up") {
+      } else if (
+        payload.mode === "affiliate-sign-up" ||
+        payload.mode === "public-affiliate-sign-up"
+      ) {
         router.push("/affiliate/dashboard?invite=accepted");
       } else {
         router.push(await resolveSignInRoute(payload.redirectTo));

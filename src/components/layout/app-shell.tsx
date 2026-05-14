@@ -37,6 +37,7 @@ const ONBOARDING_PREFIXES = [
   "/company/settings/stripe",
   "/affiliate/onboarding",
   "/invite/",
+  "/join/",
 ];
 
 function isOnboardingPath(pathname: string | null) {

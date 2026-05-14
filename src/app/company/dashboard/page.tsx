@@ -83,8 +83,7 @@ export default async function CompanyDashboardPage({
             title="Invite your first affiliate to start tracking direct booking revenue."
             action={<Link href="/company/affiliates/new"><Button>New Affiliate</Button></Link>}
           >
-            Create the affiliate record, copy the exact Lodgify promotion name, then mark setup complete after it
-            exists in Lodgify.
+            Create the affiliate record, confirm setup, then send the invite when you are ready.
           </Banner>
         ) : null}
 

@@ -4,10 +4,10 @@ import { useMemo, useState } from "react";
 import { ArrowRight, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyField } from "@/components/ui/copy-field";
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Banner } from "@/components/ui/banner";
 import {
   generateAffiliateSlug,
   generateLodgifyPromotionName,
@@ -27,8 +27,10 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState<{ affiliateId: string; lodgifyPromotionName: string; inviteToken: string; publicCode: string } | null>(null);
   const [message, setMessage] = useState("");
+  const [setupDialogOpen, setSetupDialogOpen] = useState(false);
   const [inviteState, setInviteState] = useState<{ sending: boolean; sent: boolean }>({ sending: false, sent: false });
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const lodgifyUrl = process.env.NEXT_PUBLIC_LODGIFY_PROMOTIONS_URL ?? "https://app.lodgify.com";
 
   const generated = useMemo(() => {
     const affiliateSlug = generateAffiliateSlug(name);
@@ -75,7 +77,8 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
       if (!response.ok || !payload.affiliate) throw new Error(payload.error ?? "Affiliate save failed.");
       setSaved(payload.affiliate);
       setInviteState({ sending: false, sent: false });
-      setMessage("Affiliate saved. Copy the exact Lodgify promotion name before sending the invite.");
+      setSetupDialogOpen(true);
+      setMessage("Affiliate saved.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Affiliate save failed.");
     }
@@ -169,9 +172,6 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
       </Card>
       {saved ? (
         <div className="space-y-6">
-          <Banner title="Create this promotion in Lodgify" tone="warning">
-            The Lodgify promotion name must exactly match this value. This is how paid bookings are attributed.
-          </Banner>
           <Card>
             <CardHeader>
               <CardTitle>Generated Promo Information</CardTitle>
@@ -204,6 +204,30 @@ export function AddAffiliateForm({ company }: { company: CurrentCompany }) {
           </Card>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={setupDialogOpen && Boolean(saved)}
+        tone="warning"
+        title="Add this affiliate in Lodgify"
+        confirmLabel="Open Lodgify"
+        cancelLabel="Done"
+        description={
+          saved ? (
+            <div className="space-y-4">
+              <p>
+                Before inviting this affiliate, add the Lodgify promotion below. Discoverly uses this exact promotion
+                name to attribute paid bookings and calculate commissions.
+              </p>
+              <CopyField label="Customer code" value={saved.publicCode} />
+              <CopyField label="Lodgify promotion name" value={saved.lodgifyPromotionName} />
+            </div>
+          ) : null
+        }
+        onConfirm={() => {
+          window.open(lodgifyUrl, "_blank", "noopener,noreferrer");
+          setSetupDialogOpen(false);
+        }}
+        onCancel={() => setSetupDialogOpen(false)}
+      />
     </div>
   );
 }
