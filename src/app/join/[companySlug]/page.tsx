@@ -27,8 +27,8 @@ export default async function PublicAffiliateJoinPage({
 
   return (
     <AppShell title="Join affiliate program" description="Create your affiliate account." hideNav>
-      <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-5">
+      <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center py-8">
+        <div className="w-full max-w-md">
           {!configured ? (
             <Banner title="Supabase is not configured" tone="warning">
               Add Supabase environment variables before accepting affiliate signups.
@@ -38,31 +38,28 @@ export default async function PublicAffiliateJoinPage({
               This signup link is invalid or has been removed.
             </Banner>
           ) : (
-            <>
-              <Card>
-                <CardContent className="space-y-5 p-7">
-                  <div>
-                    <p className="text-sm font-semibold uppercase text-slate-500">Affiliate program</p>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                      {company.name}
-                    </h1>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <ProgramFact label="Guest code" value={formatDiscount(company)} />
-                    <ProgramFact label="Payout" value={formatPayout(company)} />
-                    <ProgramFact label="Booking site" value={company.booking_site_url ? "Configured" : "Pending"} />
-                  </div>
-                </CardContent>
-              </Card>
-            </>
+            <Card>
+              <CardContent className="space-y-6 p-7 sm:p-8">
+                <div className="space-y-2 text-center">
+                  <p className="text-xs font-semibold uppercase text-slate-500">Affiliate signup</p>
+                  <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+                    Join {company.name}
+                  </h1>
+                  <p className="text-sm leading-6 text-[#525a48]">
+                    Verify your email to create your code and open your dashboard.
+                  </p>
+                </div>
+                <PublicAffiliateJoinForm
+                  companySlug={company.slug as string}
+                />
+                <div className="grid grid-cols-2 gap-4 border-t border-border/70 pt-5">
+                  <ProgramFact label="Guest code" value={formatDiscount(company)} />
+                  <ProgramFact label="Payout" value={formatPayout(company)} />
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
-        {company ? (
-          <PublicAffiliateJoinForm
-            companyName={company.name as string}
-            companySlug={company.slug as string}
-          />
-        ) : null}
       </div>
     </AppShell>
   );
@@ -70,7 +67,7 @@ export default async function PublicAffiliateJoinPage({
 
 function ProgramFact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-t border-border/70 pt-3">
+    <div className="text-center">
       <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
       <p className="mt-1 text-sm font-semibold text-slate-950">{value}</p>
     </div>
