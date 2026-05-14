@@ -54,14 +54,14 @@ export async function logOperationalEvent(input: OperationalEventInput) {
     const admin = createSupabaseAdminClient();
     const { error } = await admin.from("operational_events").insert(payload);
     if (error) {
-      console.error("[ops] failed to write operational event", {
+      console.warn("[ops] could not persist operational event", {
         error: error.message,
         source: input.source,
         event: input.event,
       });
     }
   } catch (error) {
-    console.error("[ops] failed to write operational event", {
+    console.warn("[ops] could not persist operational event", {
       error: error instanceof Error ? error.message : "Unknown logging failure.",
       source: input.source,
       event: input.event,
