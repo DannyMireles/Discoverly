@@ -33,41 +33,26 @@ export async function createPayoutBatch(companyId: string) {
   );
   const totalAmount = groups.reduce((total, group) => total + group.amount, 0);
 
-  const { data: batch, error: batchError } = await supabase
-    .from("payout_batches")
-    .upsert(
-      {
-        company_id: companyId,
-        period_start: periodStart,
-        period_end: periodEnd,
-        pay_by: payBy,
-        status: "draft",
-        total_amount: totalAmount,
-      },
-      { onConflict: "company_id,period_start,period_end" },
-    )
-    .select("id")
-    .single();
-
-  if (batchError) throw new Error(batchError.message);
+  const batch = await getOrCreateOpenBatch();
 
   for (const group of groups) {
-    const { data: payout, error: payoutError } = await supabase
+    const { data: existingPayout, error: existingPayoutError } = await supabase
       .from("payouts")
-      .upsert(
-        {
-          company_id: companyId,
-          payout_batch_id: batch.id,
-          affiliate_id: group.affiliateId,
-          amount: group.amount,
-          status: "pending",
-        },
-        { onConflict: "payout_batch_id,affiliate_id" },
-      )
-      .select("id")
-      .single();
+      .select("id, status")
+      .eq("payout_batch_id", batch.id)
+      .eq("affiliate_id", group.affiliateId)
+      .maybeSingle();
 
-    if (payoutError) throw new Error(payoutError.message);
+    if (existingPayoutError) throw new Error(existingPayoutError.message);
+
+    const payout = existingPayout
+      ? await updateOpenPayoutAmount(existingPayout.id as string, existingPayout.status as string, group.amount)
+      : await insertPayout({
+          companyId,
+          batchId: batch.id as string,
+          affiliateId: group.affiliateId,
+          amount: group.amount,
+        });
 
     for (const commissionId of group.commissionIds) {
       await supabase.from("payout_items").upsert(
@@ -89,4 +74,92 @@ export async function createPayoutBatch(companyId: string) {
     totalAmount,
     groups,
   };
+
+  async function getOrCreateOpenBatch() {
+    const { data: existingBatch, error: existingBatchError } = await supabase
+      .from("payout_batches")
+      .select("id, status")
+      .eq("company_id", companyId)
+      .eq("period_start", periodStart)
+      .eq("period_end", periodEnd)
+      .maybeSingle();
+
+    if (existingBatchError) throw new Error(existingBatchError.message);
+
+    if (existingBatch) {
+      const status = existingBatch.status as string;
+      const shouldRefreshAmount = ["draft", "approved", "failed"].includes(status);
+      const { data, error } = await supabase
+        .from("payout_batches")
+        .update({
+          pay_by: payBy,
+          ...(shouldRefreshAmount ? { total_amount: totalAmount } : {}),
+        })
+        .eq("id", existingBatch.id)
+        .select("id, status")
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    }
+
+    const { data, error } = await supabase
+      .from("payout_batches")
+      .insert({
+        company_id: companyId,
+        period_start: periodStart,
+        period_end: periodEnd,
+        pay_by: payBy,
+        status: "draft",
+        total_amount: totalAmount,
+      })
+      .select("id, status")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async function updateOpenPayoutAmount(payoutId: string, status: string, amount: number) {
+    if (!["pending", "approved", "failed"].includes(status)) {
+      return { id: payoutId };
+    }
+
+    const { data, error } = await supabase
+      .from("payouts")
+      .update({ amount })
+      .eq("id", payoutId)
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async function insertPayout({
+    companyId,
+    batchId,
+    affiliateId,
+    amount,
+  }: {
+    companyId: string;
+    batchId: string;
+    affiliateId: string;
+    amount: number;
+  }) {
+    const { data, error } = await supabase
+      .from("payouts")
+      .insert({
+        company_id: companyId,
+        payout_batch_id: batchId,
+        affiliate_id: affiliateId,
+        amount,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return data;
+  }
 }

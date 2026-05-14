@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAffiliate } from "@/lib/affiliates/create-affiliate";
 import { notifyCompanyOwnerAboutAffiliate } from "@/lib/affiliates/notify-company-owner";
+import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -94,6 +95,19 @@ export async function POST(request: Request) {
     promotionStatus: "active",
   });
 
+  await logOperationalEvent({
+    companyId: company.id as string,
+    affiliateId: affiliate.affiliateId,
+    actorUserId: user.id,
+    source: "affiliate_signup",
+    event: "public_affiliate_created",
+    message: "Affiliate joined from public signup link.",
+    metadata: {
+      publicCode: affiliate.publicCode,
+      createdViaReference: `/join/${company.slug}`,
+    },
+  });
+
   try {
     await notifyCompanyOwnerAboutAffiliate({
       supabase: admin,
@@ -104,6 +118,14 @@ export async function POST(request: Request) {
       affiliateEmail: email,
       publicCode: affiliate.publicCode,
       lodgifyPromotionName: affiliate.lodgifyPromotionName,
+    });
+    await logOperationalEvent({
+      companyId: company.id as string,
+      affiliateId: affiliate.affiliateId,
+      actorUserId: user.id,
+      source: "affiliate_signup",
+      event: "owner_notification_sent",
+      message: "Company owner was notified about a public affiliate signup.",
     });
   } catch (error) {
     const message =
@@ -116,6 +138,16 @@ export async function POST(request: Request) {
       affiliateId: affiliate.affiliateId,
       companyId: company.id,
       error: message,
+    });
+    await logOperationalEvent({
+      companyId: company.id as string,
+      affiliateId: affiliate.affiliateId,
+      actorUserId: user.id,
+      source: "affiliate_signup",
+      event: "owner_notification_failed",
+      level: "error",
+      message: "Company owner notification failed after public signup.",
+      metadata: errorMetadata(error),
     });
   }
 

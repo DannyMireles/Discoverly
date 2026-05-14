@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
 import { createStripeClient } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requiredEnv } from "@/lib/supabase/server";
@@ -9,6 +10,12 @@ export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
 
   if (!signature) {
+    await logOperationalEvent({
+      source: "stripe_webhook",
+      event: "webhook_missing_signature",
+      level: "warn",
+      message: "Stripe webhook request was missing its signature header.",
+    });
     return NextResponse.json({ error: "Missing Stripe signature." }, { status: 400 });
   }
 
@@ -20,6 +27,13 @@ export async function POST(request: Request) {
       requiredEnv("STRIPE_WEBHOOK_SECRET"),
     );
   } catch (error) {
+    await logOperationalEvent({
+      source: "stripe_webhook",
+      event: "webhook_invalid_signature",
+      level: "warn",
+      message: "Stripe webhook signature verification failed.",
+      metadata: errorMetadata(error),
+    });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Invalid Stripe webhook." },
       { status: 400 },
@@ -39,8 +53,29 @@ export async function POST(request: Request) {
         break;
     }
 
+    await logOperationalEvent({
+      source: "stripe_webhook",
+      event: "webhook_received",
+      message: "Stripe webhook processed.",
+      metadata: {
+        stripeEventId: event.id,
+        type: event.type,
+      },
+    });
+
     return NextResponse.json({ received: true, type: event.type });
   } catch (error) {
+    await logOperationalEvent({
+      source: "stripe_webhook",
+      event: "webhook_failed",
+      level: "error",
+      message: "Stripe webhook handler failed.",
+      metadata: {
+        stripeEventId: event.id,
+        type: event.type,
+        ...errorMetadata(error),
+      },
+    });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Stripe webhook handler failed." },
       { status: 500 },
@@ -56,13 +91,34 @@ async function handleAccountUpdated(account: Stripe.Account) {
     payoutsEnabled &&
     Boolean(account.charges_enabled ?? true);
 
-  await admin
+  const { data: affiliate } = await admin
+    .from("affiliates")
+    .select("id, company_id")
+    .eq("stripe_account_id", account.id)
+    .maybeSingle();
+
+  const { error } = await admin
     .from("affiliates")
     .update({
       stripe_connected: fullyOnboarded,
       stripe_payouts_enabled: payoutsEnabled,
     })
     .eq("stripe_account_id", account.id);
+
+  if (error) throw new Error(error.message);
+
+  await logOperationalEvent({
+    companyId: (affiliate?.company_id as string | undefined) ?? null,
+    affiliateId: (affiliate?.id as string | undefined) ?? null,
+    source: "stripe_webhook",
+    event: "account_updated",
+    message: "Affiliate Stripe account status updated from webhook.",
+    metadata: {
+      stripeAccountId: account.id,
+      payoutsEnabled,
+      fullyOnboarded,
+    },
+  });
 }
 
 async function handleTransferReversed(transfer: Stripe.Transfer) {
@@ -72,7 +128,7 @@ async function handleTransferReversed(transfer: Stripe.Transfer) {
 
   const { data: payout } = await admin
     .from("payouts")
-    .select("id, payout_batch_id")
+    .select("id, company_id, affiliate_id, payout_batch_id")
     .eq("stripe_transfer_id", transfer.id)
     .maybeSingle();
 
@@ -98,4 +154,20 @@ async function handleTransferReversed(transfer: Stripe.Transfer) {
       .update({ status: "clawback_needed" })
       .in("id", commissionIds);
   }
+
+  await logOperationalEvent({
+    companyId: payout.company_id as string,
+    affiliateId: payout.affiliate_id as string,
+    payoutBatchId: payout.payout_batch_id as string,
+    payoutId: payout.id as string,
+    source: "stripe_webhook",
+    event: "transfer_reversed",
+    level: "error",
+    message: "Stripe transfer was reversed and commissions were marked for clawback.",
+    metadata: {
+      stripeTransferId: transfer.id,
+      commissionCount: commissionIds.length,
+      amountReversed: transfer.amount_reversed,
+    },
+  });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
 import { createStripeClient } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -25,11 +26,18 @@ export async function GET(request: Request) {
 
   const { data: affiliate } = await admin
     .from("affiliates")
-    .select("id, stripe_account_id")
+    .select("id, company_id, stripe_account_id")
     .eq("id", parsed.data.affiliateId)
     .maybeSingle();
 
   if (!affiliate?.stripe_account_id) {
+    await logOperationalEvent({
+      affiliateId: parsed.data.affiliateId,
+      source: "stripe_connect",
+      event: "affiliate_callback_missing_account",
+      level: "warn",
+      message: "Affiliate Stripe callback did not find a Stripe account ID.",
+    });
     return NextResponse.redirect(`${returnUrl}?stripe=error`);
   }
 
@@ -51,10 +59,32 @@ export async function GET(request: Request) {
       })
       .eq("id", affiliate.id);
 
+    await logOperationalEvent({
+      companyId: affiliate.company_id as string,
+      affiliateId: affiliate.id as string,
+      source: "stripe_connect",
+      event: "affiliate_callback_completed",
+      message: "Affiliate Stripe callback refreshed account status.",
+      metadata: {
+        accountId: affiliate.stripe_account_id,
+        payoutsEnabled,
+        fullyOnboarded,
+      },
+    });
+
     return NextResponse.redirect(
       `${returnUrl}?stripe=${fullyOnboarded ? "connected" : "incomplete"}`,
     );
-  } catch {
+  } catch (error) {
+    await logOperationalEvent({
+      companyId: affiliate.company_id as string,
+      affiliateId: affiliate.id as string,
+      source: "stripe_connect",
+      event: "affiliate_callback_failed",
+      level: "error",
+      message: "Affiliate Stripe callback failed.",
+      metadata: errorMetadata(error),
+    });
     return NextResponse.redirect(`${returnUrl}?stripe=error`);
   }
 }

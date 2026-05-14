@@ -6,17 +6,28 @@ export type CompanyDataState = Awaited<ReturnType<typeof getCompanyData>>;
 export async function getCompanyData() {
   const state = await getCurrentUserAndCompany();
   if (!state.configured || !state.user || !state.company) {
-    return { ...state, affiliates: [], promotions: [], bookings: [], commissions: [], unmatchedPromotions: [] };
+    return {
+      ...state,
+      affiliates: [],
+      promotions: [],
+      bookings: [],
+      commissions: [],
+      unmatchedPromotions: [],
+      payoutBatches: [],
+      payouts: [],
+    };
   }
 
   const supabase = await createSupabaseServerClient();
-  const [affiliatesResult, promotionsResult, bookingsResult, commissionsResult, unmatchedResult] =
+  const [affiliatesResult, promotionsResult, bookingsResult, commissionsResult, unmatchedResult, payoutBatchesResult, payoutsResult] =
     await Promise.all([
       supabase.from("affiliates").select("*").eq("company_id", state.company.id).order("created_at", { ascending: false }),
       supabase.from("affiliate_promotions").select("*").eq("company_id", state.company.id).order("created_at", { ascending: false }),
       supabase.from("lodgify_bookings").select("*").eq("company_id", state.company.id).order("created_at", { ascending: false }).limit(100),
       supabase.from("commissions").select("*").eq("company_id", state.company.id).order("created_at", { ascending: false }).limit(100),
       supabase.from("unmatched_promotions").select("*").eq("company_id", state.company.id).order("created_at", { ascending: false }).limit(50),
+      supabase.from("payout_batches").select("*").eq("company_id", state.company.id).order("created_at", { ascending: false }).limit(12),
+      supabase.from("payouts").select("*").eq("company_id", state.company.id).order("created_at", { ascending: false }).limit(100),
     ]);
 
   return {
@@ -26,6 +37,8 @@ export async function getCompanyData() {
     bookings: bookingsResult.data ?? [],
     commissions: commissionsResult.data ?? [],
     unmatchedPromotions: unmatchedResult.data ?? [],
+    payoutBatches: payoutBatchesResult.data ?? [],
+    payouts: payoutsResult.data ?? [],
   };
 }
 

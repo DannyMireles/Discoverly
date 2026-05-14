@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { encryptSecret } from "@/lib/crypto/secrets";
+import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { exchangeStripeOAuthCode } from "@/lib/stripe";
 
@@ -14,6 +15,16 @@ export async function GET(request: Request) {
 
   if (error || !code || !companyId) {
     const msg = errorDescription ?? error ?? "missing_code";
+    if (companyId) {
+      await logOperationalEvent({
+        companyId,
+        source: "stripe_connect",
+        event: "company_oauth_rejected",
+        level: "warn",
+        message: "Company Stripe OAuth callback returned an error.",
+        metadata: { stripeError: msg },
+      });
+    }
     return NextResponse.redirect(`${settingsUrl}?error=${encodeURIComponent(msg)}`);
   }
 
@@ -32,9 +43,27 @@ export async function GET(request: Request) {
 
     if (dbError) throw new Error(dbError.message);
 
+    await logOperationalEvent({
+      companyId,
+      source: "stripe_connect",
+      event: "company_oauth_completed",
+      message: "Company Stripe OAuth completed.",
+      metadata: {
+        stripeAccountId: token.stripe_user_id,
+      },
+    });
+
     return NextResponse.redirect(`${settingsUrl}?connected=true`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "stripe_oauth_failed";
+    await logOperationalEvent({
+      companyId,
+      source: "stripe_connect",
+      event: "company_oauth_failed",
+      level: "error",
+      message: "Company Stripe OAuth callback failed.",
+      metadata: errorMetadata(err),
+    });
     return NextResponse.redirect(`${settingsUrl}?error=${encodeURIComponent(msg)}`);
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logOperationalEvent } from "@/lib/ops/events";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripeConnectOAuthUrl } from "@/lib/stripe";
@@ -30,9 +31,24 @@ export async function GET(request: Request) {
     .maybeSingle();
 
   if (!member) {
+    await logOperationalEvent({
+      companyId,
+      actorUserId: user.id,
+      source: "stripe_connect",
+      event: "company_oauth_forbidden",
+      level: "warn",
+      message: "Non-admin attempted to start company Stripe OAuth.",
+    });
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
   const oauthUrl = await getStripeConnectOAuthUrl(companyId);
+  await logOperationalEvent({
+    companyId,
+    actorUserId: user.id,
+    source: "stripe_connect",
+    event: "company_oauth_started",
+    message: "Company Stripe OAuth started.",
+  });
   return NextResponse.redirect(oauthUrl);
 }

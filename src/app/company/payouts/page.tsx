@@ -6,17 +6,28 @@ import { formatOrdinalDay } from "@/lib/utils/format";
 export default async function PayoutsPage() {
   const data = await getCompanyData();
   const payByDay = data.company?.payout_pay_by_day;
+  const latestPayoutByAffiliateId = new Map<string, (typeof data.payouts)[number]>();
+  for (const payout of data.payouts) {
+    const affiliateId = payout.affiliate_id as string;
+    if (!latestPayoutByAffiliateId.has(affiliateId)) {
+      latestPayoutByAffiliateId.set(affiliateId, payout);
+    }
+  }
+
   const groups = data.affiliates.map((affiliate) => {
     const commissions = data.commissions.filter((commission) => commission.affiliate_id === affiliate.id);
+    const payout = latestPayoutByAffiliateId.get(affiliate.id as string) ?? null;
+    const calculatedAmount = commissions
+      .filter((commission) => ["pending", "eligible", "approved", "held"].includes(commission.status))
+      .reduce((sum, commission) => sum + Number(commission.commission_amount ?? 0), 0);
     return {
       affiliate: affiliate.name as string,
       stripeStatus: affiliate.stripe_connected ? "Connected" : "Needs Stripe",
       eligibleBookings: commissions.filter((commission) => commission.status === "eligible").length,
       revenueDriven: 0,
-      commissionAmount: commissions
-        .filter((commission) => ["pending", "eligible", "approved", "held"].includes(commission.status))
-        .reduce((sum, commission) => sum + Number(commission.commission_amount ?? 0), 0),
-      status: commissions.some((commission) => commission.status === "approved") ? "approved" : "pending",
+      commissionAmount: payout ? Number(payout.amount ?? 0) : calculatedAmount,
+      status: (payout?.status as string | undefined) ?? (commissions.some((commission) => commission.status === "approved") ? "approved" : "pending"),
+      payoutId: (payout?.id as string | undefined) ?? null,
     };
   });
 
@@ -25,7 +36,7 @@ export default async function PayoutsPage() {
       title="Payouts"
       description={`Previous month is paid by the ${formatOrdinalDay(payByDay, "set")} after manual approval.`}
     >
-      <PayoutsView groups={groups} />
+      {data.company ? <PayoutsView companyId={data.company.id} groups={groups} /> : <PayoutsView companyId="" groups={[]} />}
     </AppShell>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BadgeDollarSign, CheckCircle2, Clock, Send, XCircle } from "lucide-react";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
@@ -21,17 +22,45 @@ type PayoutRow = {
   revenueDriven: number;
   commissionAmount: number;
   status: string;
+  payoutId: string | null;
 };
 
-export function PayoutsView({ groups }: { groups: PayoutRow[] }) {
+export function PayoutsView({
+  companyId,
+  groups,
+}: {
+  companyId: string;
+  groups: PayoutRow[];
+}) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<PayoutTab>("Current batch");
   const [heldAffiliates, setHeldAffiliates] = useState<string[]>([]);
-  const eligible = groups.reduce((total, group) => total + group.commissionAmount, 0);
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [processingPayoutId, setProcessingPayoutId] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+  const pendingAmount = groups
+    .filter((group) => ["pending", "held"].includes(group.status))
+    .reduce((total, group) => total + group.commissionAmount, 0);
+  const eligibleAmount = groups
+    .filter((group) => ["pending", "approved", "processing", "failed", "held"].includes(group.status))
+    .reduce((total, group) => total + group.commissionAmount, 0);
+  const approvedAmount = groups
+    .filter((group) => group.status === "approved")
+    .reduce((sum, group) => sum + group.commissionAmount, 0);
+  const paidAmount = groups
+    .filter((group) => group.status === "paid")
+    .reduce((sum, group) => sum + group.commissionAmount, 0);
+  const failedAmount = groups
+    .filter((group) => group.status === "failed")
+    .reduce((sum, group) => sum + group.commissionAmount, 0);
 
   const visibleGroups = useMemo(() => {
     if (activeTab === "Current batch") return groups;
     if (activeTab === "Pending") return groups.filter((group) => group.status === "pending" || group.status === "held");
     if (activeTab === "Approved") return groups.filter((group) => group.status === "approved");
+    if (activeTab === "Paid") return groups.filter((group) => group.status === "paid");
+    if (activeTab === "Failed") return groups.filter((group) => group.status === "failed");
+    if (activeTab === "Canceled/Reversed") return groups.filter((group) => ["canceled", "failed"].includes(group.status));
     return [];
   }, [activeTab, groups]);
 
@@ -43,18 +72,71 @@ export function PayoutsView({ groups }: { groups: PayoutRow[] }) {
     );
   }
 
+  async function createCurrentBatch() {
+    setBatchLoading(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/payouts/batches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyId }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Could not create payout batch.");
+      setMessage({ tone: "success", text: "Payout batch is ready." });
+      router.refresh();
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : "Could not create payout batch." });
+    } finally {
+      setBatchLoading(false);
+    }
+  }
+
+  async function sendPayout(payoutId: string) {
+    setProcessingPayoutId(payoutId);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/payouts/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payoutId }),
+      });
+      const payload = (await response.json()) as { error?: string; stripeTransferId?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Could not send payout.");
+      setMessage({
+        tone: "success",
+        text: `Payout sent${payload.stripeTransferId ? ` with transfer ${payload.stripeTransferId}` : ""}.`,
+      });
+      router.refresh();
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : "Could not send payout." });
+    } finally {
+      setProcessingPayoutId(null);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Pending" value={formatCurrency(eligible)} icon={<Clock className="h-5 w-5" />} tone="amber" />
-        <StatCard label="Eligible" value={formatCurrency(eligible)} icon={<BadgeDollarSign className="h-5 w-5" />} />
-        <StatCard label="Approved" value={formatCurrency(groups.filter((group) => group.status === "approved").reduce((sum, group) => sum + group.commissionAmount, 0))} icon={<CheckCircle2 className="h-5 w-5" />} tone="green" />
-        <StatCard label="Paid This Month" value={formatCurrency(groups.filter((group) => group.status === "paid").reduce((sum, group) => sum + group.commissionAmount, 0))} icon={<Send className="h-5 w-5" />} tone="green" />
-        <StatCard label="Failed" value="$0.00" icon={<XCircle className="h-5 w-5" />} tone="slate" />
+        <StatCard label="Pending" value={formatCurrency(pendingAmount)} icon={<Clock className="h-5 w-5" />} tone="amber" />
+        <StatCard label="Eligible" value={formatCurrency(eligibleAmount)} icon={<BadgeDollarSign className="h-5 w-5" />} />
+        <StatCard label="Approved" value={formatCurrency(approvedAmount)} icon={<CheckCircle2 className="h-5 w-5" />} tone="green" />
+        <StatCard label="Paid This Month" value={formatCurrency(paidAmount)} icon={<Send className="h-5 w-5" />} tone="green" />
+        <StatCard label="Failed" value={formatCurrency(failedAmount)} icon={<XCircle className="h-5 w-5" />} tone="slate" />
       </section>
       <Banner title="Manual approval required">
-        Discoverly.ai calculates eligible unpaid commissions. Admin approval sends Stripe Connect transfers.
+        Build the monthly batch, review each row, then send Stripe Connect transfers manually.
       </Banner>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" onClick={() => void createCurrentBatch()} disabled={batchLoading || !companyId}>
+          {batchLoading ? "Preparing..." : "Prepare Current Batch"}
+        </Button>
+        {message ? (
+          <p className={`text-sm ${message.tone === "success" ? "text-emerald-700" : "text-red-600"}`}>
+            {message.text}
+          </p>
+        ) : null}
+      </div>
       <div className="flex gap-2 overflow-x-auto rounded-2xl border border-border/80 bg-white p-2 shadow-sm">
         {tabs.map((tab) => (
           <Button
@@ -105,7 +187,19 @@ export function PayoutsView({ groups }: { groups: PayoutRow[] }) {
                           <Button variant={isHeld ? "secondary" : "primary"} className="h-9 min-h-9" onClick={() => toggleHold(group.affiliate)}>
                             {isHeld ? "Release Hold" : "Hold"}
                           </Button>
-                          <Button className="h-9 min-h-9" disabled={isHeld || group.stripeStatus !== "Connected"}>Approve</Button>
+                          <Button
+                            className="h-9 min-h-9"
+                            disabled={
+                              isHeld ||
+                              !group.payoutId ||
+                              group.stripeStatus !== "Connected" ||
+                              ["paid", "processing", "canceled"].includes(group.status) ||
+                              processingPayoutId === group.payoutId
+                            }
+                            onClick={() => group.payoutId && void sendPayout(group.payoutId)}
+                          >
+                            {processingPayoutId === group.payoutId ? "Sending..." : "Send Payout"}
+                          </Button>
                         </div>
                       </TD>
                     </TR>

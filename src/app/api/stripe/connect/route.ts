@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/guards";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
 import { createAccountLink, createAffiliateConnectAccount } from "@/lib/stripe";
 
 const requestSchema = z.object({
@@ -41,6 +42,15 @@ export async function POST(request: Request) {
       .in("role", ["owner", "admin"])
       .maybeSingle();
     if (!member) {
+      await logOperationalEvent({
+        companyId: affiliate.company_id as string,
+        affiliateId: affiliate.id as string,
+        actorUserId: user!.id,
+        source: "stripe_connect",
+        event: "affiliate_connect_forbidden",
+        level: "warn",
+        message: "User attempted to create an affiliate Stripe account link without access.",
+      });
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
   }
@@ -63,12 +73,35 @@ export async function POST(request: Request) {
       parsed.data.returnUrl,
     );
 
+    await logOperationalEvent({
+      companyId: affiliate.company_id as string,
+      affiliateId: affiliate.id as string,
+      actorUserId: user!.id,
+      source: "stripe_connect",
+      event: "affiliate_account_link_created",
+      message: "Affiliate Stripe account link created.",
+      metadata: {
+        accountId,
+        reusedAccount: Boolean(affiliate.stripe_account_id),
+      },
+    });
+
     return NextResponse.json({
       affiliateId: parsed.data.affiliateId,
       accountId,
       url: accountLink.url,
     });
   } catch (error) {
+    await logOperationalEvent({
+      companyId: affiliate.company_id as string,
+      affiliateId: affiliate.id as string,
+      actorUserId: user!.id,
+      source: "stripe_connect",
+      event: "affiliate_account_link_failed",
+      level: "error",
+      message: "Affiliate Stripe Connect setup failed.",
+      metadata: errorMetadata(error),
+    });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Stripe Connect setup failed." },
       { status: 500 },
