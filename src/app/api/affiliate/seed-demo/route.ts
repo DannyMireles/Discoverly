@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth/guards";
 import { clearAffiliateDemoData, seedAffiliateDemoData } from "@/lib/demo/seed";
+import { isDemoToolsEnabled } from "@/lib/demo/tools";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const requestSchema = z.object({
@@ -9,6 +10,10 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  if (!isDemoToolsEnabled()) {
+    return NextResponse.json({ error: "Demo tools are disabled." }, { status: 404 });
+  }
+
   const { user, response: authError } = await requireUser();
   if (authError) return authError;
 

@@ -18,6 +18,7 @@ import {
   filterAffiliateBySince,
 } from "@/lib/affiliate/charts";
 import { parsePeriod, periodMonths, periodSince } from "@/lib/company/filters";
+import { isDemoToolsEnabled } from "@/lib/demo/tools";
 import { formatCurrency, formatOrdinalDay } from "@/lib/utils/format";
 
 export default async function AffiliateDashboardPage({
@@ -46,7 +47,7 @@ export default async function AffiliateDashboardPage({
       title="Affiliate Dashboard"
       description="Revenue, paid bookings, and pending earnings."
       section="affiliate"
-      actions={data.affiliate && data.promotion ? <AffiliateDemoDataButtons /> : null}
+      actions={data.affiliate && data.promotion && isDemoToolsEnabled() ? <AffiliateDemoDataButtons /> : null}
     >
       <div className="space-y-8">
         {!data.user ? (

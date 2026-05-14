@@ -23,6 +23,7 @@ import {
   periodMonths,
   periodSince,
 } from "@/lib/company/filters";
+import { isDemoToolsEnabled } from "@/lib/demo/tools";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 export default async function CompanyDashboardPage({
@@ -55,7 +56,7 @@ export default async function CompanyDashboardPage({
     <AppShell
       title="Company Dashboard"
       description="Fully paid, matched Lodgify bookings only."
-      actions={data.company ? <DemoDataButtons companyId={data.company.id} /> : null}
+      actions={data.company && isDemoToolsEnabled() ? <DemoDataButtons companyId={data.company.id} /> : null}
     >
       <div className="space-y-8">
         {!data.configured ? (
