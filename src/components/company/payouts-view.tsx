@@ -173,6 +173,8 @@ export function PayoutsView({
               <TBody>
                 {visibleGroups.map((group) => {
                   const isHeld = heldAffiliates.includes(group.affiliate);
+                  const isProcessing =
+                    Boolean(group.payoutId) && processingPayoutId === group.payoutId;
 
                   return (
                     <TR key={group.affiliate}>
@@ -194,11 +196,11 @@ export function PayoutsView({
                               !group.payoutId ||
                               group.stripeStatus !== "Connected" ||
                               ["paid", "processing", "canceled"].includes(group.status) ||
-                              processingPayoutId === group.payoutId
+                              isProcessing
                             }
                             onClick={() => group.payoutId && void sendPayout(group.payoutId)}
                           >
-                            {processingPayoutId === group.payoutId ? "Sending..." : "Send Payout"}
+                            {isProcessing ? "Sending..." : "Send Payout"}
                           </Button>
                         </div>
                       </TD>
