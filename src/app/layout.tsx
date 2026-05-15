@@ -10,7 +10,6 @@ export const metadata: Metadata = {
   description: "Invite-only affiliate tracking for direct short-term rental bookings.",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/icon.png", sizes: "512x512", type: "image/png" },
     ],
     shortcut: [{ url: "/favicon.ico" }],
