@@ -91,34 +91,84 @@ async function handleAccountUpdated(account: Stripe.Account) {
     payoutsEnabled &&
     Boolean(account.charges_enabled ?? true);
 
-  const { data: affiliate } = await admin
+  const { data: affiliate, error: affiliateLookupError } = await admin
     .from("affiliates")
     .select("id, company_id")
     .eq("stripe_account_id", account.id)
     .maybeSingle();
 
-  const { error } = await admin
-    .from("affiliates")
-    .update({
-      stripe_connected: fullyOnboarded,
-      stripe_payouts_enabled: payoutsEnabled,
-    })
-    .eq("stripe_account_id", account.id);
+  if (affiliateLookupError) throw new Error(affiliateLookupError.message);
 
-  if (error) throw new Error(error.message);
+  if (affiliate) {
+    const { error } = await admin
+      .from("affiliates")
+      .update({
+        stripe_connected: fullyOnboarded,
+        stripe_payouts_enabled: payoutsEnabled,
+      })
+      .eq("stripe_account_id", account.id);
 
-  await logOperationalEvent({
-    companyId: (affiliate?.company_id as string | undefined) ?? null,
-    affiliateId: (affiliate?.id as string | undefined) ?? null,
-    source: "stripe_webhook",
-    event: "account_updated",
-    message: "Affiliate Stripe account status updated from webhook.",
-    metadata: {
-      stripeAccountId: account.id,
-      payoutsEnabled,
-      fullyOnboarded,
-    },
-  });
+    if (error) throw new Error(error.message);
+
+    await logOperationalEvent({
+      companyId: (affiliate.company_id as string | undefined) ?? null,
+      affiliateId: (affiliate.id as string | undefined) ?? null,
+      source: "stripe_webhook",
+      event: "account_updated",
+      message: "Affiliate Stripe account status updated from webhook.",
+      metadata: {
+        stripeAccountId: account.id,
+        payoutsEnabled,
+        fullyOnboarded,
+      },
+    });
+  }
+
+  const { data: company, error: companyLookupError } = await admin
+    .from("companies")
+    .select("id")
+    .eq("stripe_account_id", account.id)
+    .maybeSingle();
+
+  if (companyLookupError) throw new Error(companyLookupError.message);
+
+  if (company) {
+    const { error } = await admin
+      .from("companies")
+      .update({
+        stripe_connected: fullyOnboarded,
+        stripe_access_token_encrypted: null,
+      })
+      .eq("stripe_account_id", account.id);
+
+    if (error) throw new Error(error.message);
+
+    await logOperationalEvent({
+      companyId: (company.id as string | undefined) ?? null,
+      source: "stripe_webhook",
+      event: "company_account_updated",
+      message: "Company Stripe account status updated from webhook.",
+      metadata: {
+        stripeAccountId: account.id,
+        payoutsEnabled,
+        fullyOnboarded,
+      },
+    });
+  }
+
+  if (!affiliate && !company) {
+    await logOperationalEvent({
+      source: "stripe_webhook",
+      event: "account_updated_unmatched",
+      level: "warn",
+      message: "Stripe account.updated webhook did not match a known affiliate or company account.",
+      metadata: {
+        stripeAccountId: account.id,
+        payoutsEnabled,
+        fullyOnboarded,
+      },
+    });
+  }
 }
 
 async function handleTransferReversed(transfer: Stripe.Transfer) {

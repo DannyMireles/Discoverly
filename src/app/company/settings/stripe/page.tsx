@@ -9,7 +9,7 @@ import { getCurrentUserAndCompany } from "@/lib/company/current";
 export default async function StripeSettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ connected?: string; error?: string }>;
+  searchParams: Promise<{ connected?: string; error?: string; incomplete?: string }>;
 }) {
   const { user, company, configured } = await getCurrentUserAndCompany();
   const params = await searchParams;
@@ -44,6 +44,11 @@ export default async function StripeSettingsPage({
         {params.connected === "true" && (
           <Banner title="Stripe connected successfully." tone="success">
             Your Stripe account is now linked. Payouts will transfer from your Stripe balance.
+          </Banner>
+        )}
+        {params.incomplete === "true" && (
+          <Banner title="Stripe setup needs a few more details." tone="warning">
+            Finish the remaining Stripe onboarding requirements before approving affiliate payouts.
           </Banner>
         )}
         {params.error && (

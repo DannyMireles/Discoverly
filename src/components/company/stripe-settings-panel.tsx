@@ -28,7 +28,7 @@ export function StripeSettingsPanel({ company }: { company: CurrentCompany }) {
           ) : (
             <p className="text-sm leading-6 text-[#3e4240]">
               Connect your Stripe account so Discoverly can send affiliate payouts directly from your Stripe balance.
-              You&apos;ll be taken to Stripe to authorise access — no card details are shared with Discoverly.
+              You&apos;ll be taken to Stripe-hosted onboarding to finish the connection.
             </p>
           )}
 
@@ -57,8 +57,8 @@ export function StripeSettingsPanel({ company }: { company: CurrentCompany }) {
           <div className="rounded-xl border border-white/60 bg-white/60 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#525a48]">How it works</p>
             <ol className="mt-2 space-y-1 text-xs leading-5 text-[#3e4240]">
-              <li>1. Click Connect Stripe and log in to your Stripe account.</li>
-              <li>2. Authorise Discoverly to send transfers on your behalf.</li>
+              <li>1. Click Connect Stripe and complete Stripe-hosted onboarding.</li>
+              <li>2. Return to Discoverly after Stripe verifies the required account details.</li>
               <li>3. When you approve a payout batch, funds move from your Stripe balance to each affiliate&apos;s account.</li>
             </ol>
           </div>

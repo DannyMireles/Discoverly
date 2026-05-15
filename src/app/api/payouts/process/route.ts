@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { decryptSecret } from "@/lib/crypto/secrets";
 import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/auth/guards";
@@ -123,7 +122,7 @@ export async function POST(request: Request) {
 
   const { data: company, error: companyError } = await admin
     .from("companies")
-    .select("currency_code, stripe_access_token_encrypted, stripe_connected")
+    .select("currency_code, stripe_account_id, stripe_connected")
     .eq("id", payout.company_id)
     .single();
 
@@ -143,7 +142,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: companyError.message }, { status: 500 });
   }
 
-  if (!company?.stripe_connected || !company.stripe_access_token_encrypted) {
+  if (!company?.stripe_connected || !company.stripe_account_id) {
     await logOperationalEvent({
       companyId: payout.company_id as string,
       payoutBatchId: payout.payout_batch_id as string,
@@ -249,17 +248,17 @@ export async function POST(request: Request) {
       metadata: {
         amount: Number(payout.amount),
         currency: company.currency_code,
+        source: company.stripe_account_id,
         destination: affiliate.stripe_account_id,
       },
     });
 
-    const companyAccessToken = decryptSecret(company.stripe_access_token_encrypted);
     const transfer = await sendAffiliateTransfer({
       amount: Number(payout.amount),
       currency: company.currency_code as string,
       destination: affiliate.stripe_account_id as string,
       idempotencyKey: `payout_${payout.id}`,
-      companyAccessToken,
+      sourceAccountId: company.stripe_account_id as string,
     });
 
     const paidAt = new Date().toISOString();

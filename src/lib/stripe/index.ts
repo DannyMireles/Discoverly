@@ -17,20 +17,9 @@ function stripeSecretKey() {
   return requiredEnv(getStripeMode() === "live" ? "STRIPE_SECRET_KEY_LIVE" : "STRIPE_SECRET_KEY_TEST");
 }
 
-function stripeClientId() {
-  return requiredEnv(getStripeMode() === "live" ? "STRIPE_CLIENT_ID_LIVE" : "STRIPE_CLIENT_ID_TEST");
-}
-
-/** Platform Stripe client — used for Connect OAuth and creating affiliate Express accounts. */
+/** Platform Stripe client — used for Connect onboarding, webhooks, and transfers. */
 export function createStripeClient() {
   return new Stripe(stripeSecretKey(), {
-    apiVersion: STRIPE_API_VERSION,
-  });
-}
-
-/** Company Stripe client — uses the company's OAuth access token to send transfers on their behalf. */
-export function createCompanyStripeClient(accessToken: string) {
-  return new Stripe(accessToken, {
     apiVersion: STRIPE_API_VERSION,
   });
 }
@@ -46,6 +35,20 @@ export async function createAffiliateConnectAccount(email: string) {
   });
 }
 
+export async function createCompanyConnectAccount(email?: string | null, businessName?: string | null) {
+  const stripe = createStripeClient();
+  return stripe.accounts.create({
+    type: "standard",
+    email: email ?? undefined,
+    business_profile: businessName ? { name: businessName } : undefined,
+  });
+}
+
+export async function retrieveConnectAccount(accountId: string) {
+  const stripe = createStripeClient();
+  return stripe.accounts.retrieve(accountId);
+}
+
 export async function createAccountLink(accountId: string, refreshUrl: string, returnUrl: string) {
   const stripe = createStripeClient();
   return stripe.accountLinks.create({
@@ -56,42 +59,20 @@ export async function createAccountLink(accountId: string, refreshUrl: string, r
   });
 }
 
-export async function getStripeConnectOAuthUrl(companyId: string) {
-  const clientId = stripeClientId();
-  const url = new URL("https://connect.stripe.com/oauth/authorize");
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("client_id", clientId);
-  url.searchParams.set("scope", "read_write");
-  url.searchParams.set("state", companyId);
-  return url.toString();
-}
-
-export async function exchangeStripeOAuthCode(code: string) {
-  const stripe = createStripeClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (stripe as any).oauth.token({ grant_type: "authorization_code", code }) as Promise<{
-    access_token: string;
-    stripe_user_id: string;
-    token_type: string;
-  }>;
-}
-
 export async function sendAffiliateTransfer({
   amount,
   currency,
   destination,
   idempotencyKey,
-  companyAccessToken,
+  sourceAccountId,
 }: {
   amount: number;
   currency: string;
   destination: string;
   idempotencyKey: string;
-  companyAccessToken?: string;
+  sourceAccountId: string;
 }) {
-  const stripe = companyAccessToken
-    ? createCompanyStripeClient(companyAccessToken)
-    : createStripeClient();
+  const stripe = createStripeClient();
 
   return stripe.transfers.create(
     {
@@ -99,6 +80,6 @@ export async function sendAffiliateTransfer({
       currency: currency.toLowerCase(),
       destination,
     },
-    { idempotencyKey },
+    { idempotencyKey, stripeAccount: sourceAccountId },
   );
 }
