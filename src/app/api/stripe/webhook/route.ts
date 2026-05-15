@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
-import { createStripeClient } from "@/lib/stripe";
+import {
+  createStripeClient,
+  getPaymentIntentLatestChargeId,
+} from "@/lib/stripe";
+import {
+  markPayoutFundingFailed,
+  processFundedPayoutBatch,
+} from "@/lib/payouts/transfers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requiredEnv } from "@/lib/supabase/server";
 
@@ -45,6 +52,13 @@ export async function POST(request: Request) {
       case "account.updated":
         await handleAccountUpdated(event.data.object as Stripe.Account);
         break;
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded":
+        await handlePayoutFundingSucceeded(event.data.object as Stripe.Checkout.Session);
+        break;
+      case "checkout.session.async_payment_failed":
+        await handlePayoutFundingFailed(event.data.object as Stripe.Checkout.Session);
+        break;
       case "transfer.reversed":
       case "transfer.updated":
         await handleTransferReversed(event.data.object as Stripe.Transfer);
@@ -81,6 +95,63 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+async function handlePayoutFundingSucceeded(session: Stripe.Checkout.Session) {
+  if (session.metadata?.purpose !== "affiliate_payout_funding") return;
+
+  const batchId = session.metadata.payoutBatchId;
+  if (!batchId) throw new Error("Payout funding checkout session is missing payoutBatchId metadata.");
+
+  if (session.payment_status !== "paid") {
+    await logOperationalEvent({
+      companyId: session.metadata.companyId ?? null,
+      payoutBatchId: batchId,
+      source: "stripe_webhook",
+      event: "batch_funding_checkout_pending",
+      level: "info",
+      message: "Payout funding checkout completed before payment was paid.",
+      metadata: {
+        checkoutSessionId: session.id,
+        paymentStatus: session.payment_status,
+      },
+    });
+    return;
+  }
+
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+  if (!paymentIntentId) {
+    throw new Error("Payout funding checkout session is missing payment_intent.");
+  }
+
+  const chargeId = await getPaymentIntentLatestChargeId(paymentIntentId);
+  if (!chargeId) {
+    throw new Error("Payout funding payment intent is missing latest_charge.");
+  }
+
+  await processFundedPayoutBatch({
+    batchId,
+    checkoutSessionId: session.id,
+    paymentIntentId,
+    chargeId,
+  });
+}
+
+async function handlePayoutFundingFailed(session: Stripe.Checkout.Session) {
+  if (session.metadata?.purpose !== "affiliate_payout_funding") return;
+
+  const batchId = session.metadata.payoutBatchId;
+  if (!batchId) throw new Error("Payout funding checkout session is missing payoutBatchId metadata.");
+
+  await markPayoutFundingFailed({
+    batchId,
+    checkoutSessionId: session.id,
+    message: "Stripe Checkout funding payment failed.",
+  });
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {

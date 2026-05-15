@@ -16,7 +16,7 @@ export default async function StripeSettingsPage({
 
   if (!configured) {
     return (
-      <AppShell title="Stripe Settings" description="Connect your Stripe account to fund affiliate payouts.">
+      <AppShell title="Stripe Settings" description="Configure affiliate payout funding.">
         <Banner title="Supabase is not configured" tone="warning">
           Add environment variables and restart the dev server.
         </Banner>
@@ -30,7 +30,7 @@ export default async function StripeSettingsPage({
 
   if (!company) {
     return (
-      <AppShell title="Stripe Settings" description="Connect your Stripe account to fund affiliate payouts.">
+      <AppShell title="Stripe Settings" description="Configure affiliate payout funding.">
         <Banner title="Company onboarding required" tone="warning" action={<Link href="/company/onboarding"><Button>Start Onboarding</Button></Link>}>
           Complete company onboarding before connecting Stripe.
         </Banner>
@@ -39,16 +39,16 @@ export default async function StripeSettingsPage({
   }
 
   return (
-    <AppShell title="Stripe Settings" description="Step 3 of 4 — connect Stripe to enable affiliate payouts.">
+    <AppShell title="Stripe Settings" description="Fund payout batches through Stripe Checkout.">
       <div className="space-y-4">
         {params.connected === "true" && (
           <Banner title="Stripe connected successfully." tone="success">
-            Your Stripe account is now linked. Payouts will transfer from your Stripe balance.
+            This legacy connection is no longer required for payout funding.
           </Banner>
         )}
         {params.incomplete === "true" && (
           <Banner title="Stripe setup needs a few more details." tone="warning">
-            Finish the remaining Stripe onboarding requirements before approving affiliate payouts.
+            Company Stripe onboarding is no longer required. Use the Payouts page to fund payout batches.
           </Banner>
         )}
         {params.error && (

@@ -29,7 +29,7 @@ export default async function CompanyOnboardingPage() {
           items={[
             { label: "Step 1: Create company", done: Boolean(company) },
             { label: "Step 2: Connect Lodgify API key", done: company?.lodgify_connected },
-            { label: "Step 3: Connect Stripe for payouts", done: company?.stripe_connected },
+            { label: "Step 3: Stripe payout funding ready", done: Boolean(company) },
             { label: "Step 4: Create first affiliate" },
           ]}
         />

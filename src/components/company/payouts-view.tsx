@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeDollarSign, CheckCircle2, Clock, Send, XCircle } from "lucide-react";
+import { BadgeDollarSign, CheckCircle2, Clock, CreditCard, Send, XCircle } from "lucide-react";
 import { Banner } from "@/components/ui/banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,19 +23,33 @@ type PayoutRow = {
   commissionAmount: number;
   status: string;
   payoutId: string | null;
+  payoutBatchId: string | null;
+};
+
+type CurrentBatch = {
+  id: string;
+  status: string;
+  totalAmount: number;
+  fundingStatus: string;
+  fundingError: string | null;
 };
 
 export function PayoutsView({
   companyId,
+  currencyCode,
+  currentBatch,
   groups,
 }: {
   companyId: string;
+  currencyCode: string;
+  currentBatch: CurrentBatch | null;
   groups: PayoutRow[];
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<PayoutTab>("Current batch");
   const [heldAffiliates, setHeldAffiliates] = useState<string[]>([]);
   const [batchLoading, setBatchLoading] = useState(false);
+  const [fundingLoading, setFundingLoading] = useState(false);
   const [processingPayoutId, setProcessingPayoutId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const pendingAmount = groups
@@ -53,6 +67,17 @@ export function PayoutsView({
   const failedAmount = groups
     .filter((group) => group.status === "failed")
     .reduce((sum, group) => sum + group.commissionAmount, 0);
+  const batchFunded = currentBatch?.fundingStatus === "paid";
+  const batchFundingStarted = currentBatch?.fundingStatus === "checkout_created";
+  const fundableGroups = groups.filter(
+    (group) =>
+      group.payoutId &&
+      group.payoutBatchId === currentBatch?.id &&
+      group.stripeStatus === "Connected" &&
+      !heldAffiliates.includes(group.affiliate) &&
+      ["pending", "approved", "failed"].includes(group.status),
+  );
+  const fundableAmount = fundableGroups.reduce((sum, group) => sum + group.commissionAmount, 0);
 
   const visibleGroups = useMemo(() => {
     if (activeTab === "Current batch") return groups;
@@ -92,6 +117,23 @@ export function PayoutsView({
     }
   }
 
+  async function fundCurrentBatch() {
+    if (!currentBatch) return;
+    setFundingLoading(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/payouts/batches/${currentBatch.id}/fund`, {
+        method: "POST",
+      });
+      const payload = (await response.json()) as { error?: string; url?: string | null };
+      if (!response.ok || !payload.url) throw new Error(payload.error ?? "Could not start payout funding.");
+      window.location.href = payload.url;
+    } catch (error) {
+      setMessage({ tone: "error", text: error instanceof Error ? error.message : "Could not start payout funding." });
+      setFundingLoading(false);
+    }
+  }
+
   async function sendPayout(payoutId: string) {
     setProcessingPayoutId(payoutId);
     setMessage(null);
@@ -125,18 +167,56 @@ export function PayoutsView({
         <StatCard label="Failed" value={formatCurrency(failedAmount)} icon={<XCircle className="h-5 w-5" />} tone="slate" />
       </section>
       <Banner title="Manual approval required">
-        Build the monthly batch, review each row, then send Stripe Connect transfers manually.
+        Prepare the monthly batch, review each row, then fund it once through Stripe Checkout. After Stripe confirms
+        payment, Discoverly sends each affiliate transfer automatically.
       </Banner>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={() => void createCurrentBatch()} disabled={batchLoading || !companyId}>
           {batchLoading ? "Preparing..." : "Prepare Current Batch"}
         </Button>
+        <Button
+          type="button"
+          onClick={() => void fundCurrentBatch()}
+          disabled={
+            fundingLoading ||
+            !currentBatch ||
+            fundableAmount <= 0 ||
+            batchFunded ||
+            heldAffiliates.length > 0 ||
+            fundableGroups.length === 0
+          }
+        >
+          <CreditCard className="h-4 w-4" aria-hidden />
+          {fundingLoading
+            ? "Opening Stripe..."
+            : batchFunded
+              ? "Batch Funded"
+              : heldAffiliates.length > 0
+                ? "Release Holds to Fund"
+                : `Fund & Pay ${formatCurrency(fundableAmount, currencyCode)}`}
+        </Button>
+        {currentBatch ? (
+          <div className="text-sm text-slate-600">
+            Batch: <StatusBadge status={currentBatch.status} />{" "}
+            <span className="ml-2">Funding: <StatusBadge status={formatFundingStatus(currentBatch.fundingStatus)} /></span>
+          </div>
+        ) : null}
         {message ? (
           <p className={`text-sm ${message.tone === "success" ? "text-emerald-700" : "text-red-600"}`}>
             {message.text}
           </p>
         ) : null}
       </div>
+      {batchFundingStarted ? (
+        <Banner title="Stripe payment is pending." tone="warning">
+          Finish the open Stripe Checkout payment, or start funding again if that checkout session expired.
+        </Banner>
+      ) : null}
+      {currentBatch?.fundingError ? (
+        <Banner title="Payout funding failed." tone="warning">
+          {currentBatch.fundingError}
+        </Banner>
+      ) : null}
       <div className="flex gap-2 overflow-x-auto rounded-2xl border border-border/80 bg-white p-2 shadow-sm">
         {tabs.map((tab) => (
           <Button
@@ -194,13 +274,14 @@ export function PayoutsView({
                             disabled={
                               isHeld ||
                               !group.payoutId ||
+                              !batchFunded ||
                               group.stripeStatus !== "Connected" ||
                               ["paid", "processing", "canceled"].includes(group.status) ||
                               isProcessing
                             }
                             onClick={() => group.payoutId && void sendPayout(group.payoutId)}
                           >
-                            {isProcessing ? "Sending..." : "Send Payout"}
+                            {isProcessing ? "Sending..." : group.status === "failed" ? "Retry Payout" : "Send Payout"}
                           </Button>
                         </div>
                       </TD>
@@ -214,4 +295,19 @@ export function PayoutsView({
       </Card>
     </div>
   );
+}
+
+function formatFundingStatus(status: string) {
+  switch (status) {
+    case "not_started":
+      return "Not Started";
+    case "checkout_created":
+      return "Checkout Created";
+    case "paid":
+      return "Paid";
+    case "failed":
+      return "Failed";
+    default:
+      return status;
+  }
 }

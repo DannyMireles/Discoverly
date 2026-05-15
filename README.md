@@ -65,7 +65,7 @@ Apply migrations from `supabase/migrations`. The initial migration creates the c
 
 - Deploy the Next.js app to Vercel. `vercel.json` registers an hourly cron at `/api/cron/lodgify-sync`; Vercel passes `CRON_SECRET` automatically as `Authorization: Bearer …`.
 - Configure Supabase Auth redirect URLs for the deployed domain.
-- Configure the Stripe webhook endpoint at `/api/stripe/webhook` and subscribe to: `account.updated`, `transfer.reversed`, `transfer.updated`. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
+- Configure the Stripe webhook endpoint at `/api/stripe/webhook` and subscribe to: `account.updated`, `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `transfer.reversed`, `transfer.updated`. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
 - Keep payout processing manual-approved for the MVP.
 
 ## Docs

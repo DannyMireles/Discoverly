@@ -59,18 +59,90 @@ export async function createAccountLink(accountId: string, refreshUrl: string, r
   });
 }
 
+export async function createPayoutFundingCheckoutSession({
+  batchId,
+  companyId,
+  companyName,
+  customerEmail,
+  amount,
+  currency,
+  successUrl,
+  cancelUrl,
+}: {
+  batchId: string;
+  companyId: string;
+  companyName: string;
+  customerEmail?: string | null;
+  amount: number;
+  currency: string;
+  successUrl: string;
+  cancelUrl: string;
+}) {
+  const stripe = createStripeClient();
+  const cents = Math.round(amount * 100);
+  const transferGroup = `payout_batch_${batchId}`;
+
+  return stripe.checkout.sessions.create({
+    mode: "payment",
+    customer_email: customerEmail ?? undefined,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: currency.toLowerCase(),
+          unit_amount: cents,
+          product_data: {
+            name: `${companyName} affiliate payout funding`,
+            description: "Funds an approved Discoverly affiliate payout batch.",
+          },
+        },
+      },
+    ],
+    metadata: {
+      purpose: "affiliate_payout_funding",
+      payoutBatchId: batchId,
+      companyId,
+    },
+    payment_intent_data: {
+      transfer_group: transferGroup,
+      metadata: {
+        purpose: "affiliate_payout_funding",
+        payoutBatchId: batchId,
+        companyId,
+      },
+    },
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+  });
+}
+
+export async function getPaymentIntentLatestChargeId(paymentIntentId: string) {
+  const stripe = createStripeClient();
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+    expand: ["latest_charge"],
+  });
+  const latestCharge = paymentIntent.latest_charge;
+
+  if (!latestCharge) return null;
+  return typeof latestCharge === "string" ? latestCharge : latestCharge.id;
+}
+
 export async function sendAffiliateTransfer({
   amount,
   currency,
   destination,
   idempotencyKey,
-  sourceAccountId,
+  sourceTransaction,
+  transferGroup,
+  metadata,
 }: {
   amount: number;
   currency: string;
   destination: string;
   idempotencyKey: string;
-  sourceAccountId: string;
+  sourceTransaction?: string | null;
+  transferGroup?: string | null;
+  metadata?: Record<string, string>;
 }) {
   const stripe = createStripeClient();
 
@@ -79,7 +151,10 @@ export async function sendAffiliateTransfer({
       amount: Math.round(amount * 100),
       currency: currency.toLowerCase(),
       destination,
+      source_transaction: sourceTransaction ?? undefined,
+      transfer_group: transferGroup ?? undefined,
+      metadata,
     },
-    { idempotencyKey, stripeAccount: sourceAccountId },
+    { idempotencyKey },
   );
 }

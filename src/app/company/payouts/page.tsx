@@ -6,6 +6,7 @@ import { formatOrdinalDay } from "@/lib/utils/format";
 export default async function PayoutsPage() {
   const data = await getCompanyData();
   const payByDay = data.company?.payout_pay_by_day;
+  const latestBatch = data.payoutBatches[0] ?? null;
   const latestPayoutByAffiliateId = new Map<string, (typeof data.payouts)[number]>();
   for (const payout of data.payouts) {
     const affiliateId = payout.affiliate_id as string;
@@ -28,6 +29,7 @@ export default async function PayoutsPage() {
       commissionAmount: payout ? Number(payout.amount ?? 0) : calculatedAmount,
       status: (payout?.status as string | undefined) ?? (commissions.some((commission) => commission.status === "approved") ? "approved" : "pending"),
       payoutId: (payout?.id as string | undefined) ?? null,
+      payoutBatchId: (payout?.payout_batch_id as string | undefined) ?? null,
     };
   });
 
@@ -36,7 +38,26 @@ export default async function PayoutsPage() {
       title="Payouts"
       description={`Previous month is paid by the ${formatOrdinalDay(payByDay, "set")} after manual approval.`}
     >
-      {data.company ? <PayoutsView companyId={data.company.id} groups={groups} /> : <PayoutsView companyId="" groups={[]} />}
+      {data.company ? (
+        <PayoutsView
+          companyId={data.company.id}
+          currencyCode={data.company.currency_code}
+          currentBatch={
+            latestBatch
+              ? {
+                  id: latestBatch.id as string,
+                  status: latestBatch.status as string,
+                  totalAmount: Number(latestBatch.total_amount ?? 0),
+                  fundingStatus: (latestBatch.funding_status as string | undefined) ?? "not_started",
+                  fundingError: (latestBatch.funding_error as string | null | undefined) ?? null,
+                }
+              : null
+          }
+          groups={groups}
+        />
+      ) : (
+        <PayoutsView companyId="" currencyCode="USD" currentBatch={null} groups={[]} />
+      )}
     </AppShell>
   );
 }
