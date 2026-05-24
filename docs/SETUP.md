@@ -189,12 +189,31 @@ Create `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
-STRIPE_SECRET_KEY=
+NEXT_PUBLIC_APP_URL=
+RESEND_API_KEY=
+INVITE_EMAIL_FROM=
+OWNER_NOTIFICATION_EMAIL_FROM=
+SECRET_ENCRYPTION_KEY=
+STRIPE_SECRET_KEY_TEST=
+STRIPE_SECRET_KEY_LIVE=
 STRIPE_WEBHOOK_SECRET=
-LODGIFY_API_KEY=
+STRIPE_MODE=test
+COMPANY_INVITE_TOKEN=
+CRON_SECRET=
+NEXT_PUBLIC_LODGIFY_PROMOTIONS_URL=https://app.lodgify.com
+LODGIFY_PROMOTIONS_URL=https://app.lodgify.com
 ```
 
-For production, prefer per-company encrypted Lodgify key storage over a single `LODGIFY_API_KEY`.
+Stripe uses the platform account secret key. The app selects `STRIPE_SECRET_KEY_LIVE` only on Vercel production deployments, unless `STRIPE_MODE` is set. Use `STRIPE_MODE=test` locally and in previews; use `STRIPE_MODE=live` only when intentionally forcing live mode.
+
+The webhook signing secret must match the Stripe endpoint for the same mode:
+
+```text
+Test webhook endpoint -> test whsec value -> STRIPE_MODE=test
+Live webhook endpoint -> live whsec value -> STRIPE_MODE=live or Vercel production auto-live
+```
+
+Per-company Lodgify API keys are saved encrypted through the company settings UI. Do not use a shared Lodgify API key in env for production.
 
 ## 4. Start Local App
 
@@ -208,7 +227,7 @@ npm run dev
 2. Save Lodgify API key.
 3. Test connection.
 4. Sync properties.
-5. Configure Stripe Connect.
+5. Open Stripe settings to confirm payout funding uses Stripe Checkout.
 6. Create first affiliate.
 
 ## 6. Affiliate Setup
@@ -222,4 +241,4 @@ npm run dev
 
 ## 7. Production Jobs
 
-Run Lodgify sync from a Supabase scheduled function hourly for the MVP. Keep payout execution manual-approved from the admin dashboard.
+Vercel runs `/api/cron/lodgify-sync` hourly through `vercel.json`. Keep payout batch preparation and funding manually approved from the admin dashboard.

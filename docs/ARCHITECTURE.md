@@ -29,7 +29,8 @@ Discoverly.ai is a small, security-first SaaS dashboard for affiliate-attributed
 7. Sync matches `price.description.trim()` to `affiliate_promotions.lodgify_promotion_name`.
 8. Only fully paid matched bookings create/update commissions.
 9. Monthly payout batches group eligible unpaid commissions.
-10. Admin manually approves and sends Stripe Connect transfers.
+10. Admin reviews and funds the payout batch through Stripe Checkout.
+11. Stripe webhooks confirm funding and trigger Stripe Connect transfers to affiliates.
 
 ## Modules
 

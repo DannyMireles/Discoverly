@@ -10,7 +10,7 @@ The core MVP rule is strict: a booking only counts as revenue driven, commission
 - TypeScript
 - Tailwind CSS
 - Supabase Auth, Postgres, and Row Level Security
-- Supabase Edge Functions or scheduled functions for production sync jobs
+- Vercel Cron for production sync jobs
 - Stripe Connect
 - Lodgify API
 - Vercel
@@ -66,7 +66,7 @@ Apply migrations from `supabase/migrations`. The initial migration creates the c
 - Deploy the Next.js app to Vercel. `vercel.json` registers an hourly cron at `/api/cron/lodgify-sync`; Vercel passes `CRON_SECRET` automatically as `Authorization: Bearer …`.
 - Configure Supabase Auth redirect URLs for the deployed domain.
 - Configure the Stripe webhook endpoint at `/api/stripe/webhook` and subscribe to: `account.updated`, `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `transfer.reversed`, `transfer.updated`. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
-- Keep payout processing manual-approved for the MVP.
+- Keep payout batch funding manually approved for the MVP; Stripe webhooks trigger affiliate transfers after funding succeeds.
 
 ## Docs
 

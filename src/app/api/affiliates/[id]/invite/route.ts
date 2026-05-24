@@ -58,15 +58,6 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
       .update({ invite_sent_at: new Date().toISOString() })
       .eq("id", affiliate.id);
 
-    console.log(
-      "[invite] sent",
-      JSON.stringify({
-        affiliateId: affiliate.id,
-        to: affiliate.email,
-        resendEmailId: result.id,
-        inviteUrl: result.url,
-      }),
-    );
     return NextResponse.json({ ok: true, emailId: result.id, inviteUrl: result.url });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to send invite.";

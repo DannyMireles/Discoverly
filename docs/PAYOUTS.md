@@ -33,11 +33,12 @@ Example: April commissions are reviewed and paid by May 3.
 
 1. System creates or displays the previous month payout batch.
 2. Batch includes eligible unpaid commissions.
-3. Admin reviews the batch.
-4. Admin approves payout.
-5. System sends Stripe Connect transfers.
-6. Successful transfers mark payouts, payout items, and commissions as paid.
-7. Failed transfers mark payouts failed and keep commissions unpaid or approved for retry.
+3. Admin reviews the batch and can hold any row that should not be paid yet.
+4. Admin funds the approved batch through Stripe Checkout.
+5. Stripe webhooks mark the batch as funded after the Checkout payment succeeds.
+6. System sends Stripe Connect transfers to connected affiliate accounts.
+7. Successful transfers mark payouts, payout items, and commissions as paid.
+8. Failed transfers mark payouts failed and keep commissions available for retry.
 
 ## Statuses
 
@@ -63,6 +64,8 @@ Payout batch statuses:
 ## Stripe Connect
 
 Affiliates must connect Stripe before they can receive payouts. They can share their code before connecting Stripe, but payouts remain paused until Stripe payouts are enabled.
+
+Company Stripe onboarding is not required for the MVP. Discoverly collects payout funding through the platform Stripe account, then sends transfers to affiliates from the funded batch charge.
 
 ## Cancellations and Changes
 

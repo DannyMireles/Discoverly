@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { PublicAffiliateJoinForm } from "@/components/affiliate/public-affiliate-join-form";
 import { Banner } from "@/components/ui/banner";
@@ -55,6 +56,11 @@ export default async function PublicAffiliateJoinPage({
                 <div className="grid grid-cols-2 gap-4 border-t border-border/70 pt-5">
                   <ProgramFact label="Guest code" value={formatDiscount(company)} />
                   <ProgramFact label="Payout" value={formatPayout(company)} />
+                </div>
+                <div className="border-t border-border/70 pt-5 text-center">
+                  <Link href="/how-it-works" className="text-sm font-semibold text-[#11101f] underline-offset-4 hover:underline">
+                    How the affiliate program works
+                  </Link>
                 </div>
               </CardContent>
             </Card>
