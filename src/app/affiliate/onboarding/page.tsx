@@ -18,7 +18,7 @@ export default async function AffiliateOnboardingPage() {
 
   return (
     <AppShell
-      title="Affiliate Onboarding"
+      title="Affiliate Setup"
       description="Accept invite, see code, connect Stripe."
       section="affiliate"
     >
@@ -33,8 +33,8 @@ export default async function AffiliateOnboardingPage() {
         />
         <div className="space-y-4">
           {!affiliate ? (
-            <Banner title="No affiliate profile linked yet" tone="warning">
-              Open your invite link to bind this account to your affiliate record.
+            <Banner title="Affiliate account not connected yet" tone="warning">
+              Open your invite link to finish connecting your affiliate account.
             </Banner>
           ) : null}
           {affiliate && !stripeConnected ? (

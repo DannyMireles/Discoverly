@@ -148,7 +148,7 @@ export function CompanySettingsForm({ company }: { company: CurrentCompany }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm leading-6 text-slate-600">Save and test the Lodgify key from the Lodgify settings page.</p>
+            <p className="text-sm leading-6 text-slate-600">Save and check your Lodgify key from the Lodgify settings page.</p>
             <Link href="/company/settings/lodgify"><Button>Open Lodgify Settings</Button></Link>
           </CardContent>
         </Card>
@@ -160,7 +160,7 @@ export function CompanySettingsForm({ company }: { company: CurrentCompany }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm leading-6 text-slate-600">Stripe Connect requires live Stripe credentials before redirects and webhook status updates can run.</p>
+            <p className="text-sm leading-6 text-slate-600">Manage payout funding and affiliate transfers through Stripe.</p>
             <Link href="/company/settings/stripe"><Button>Open Stripe Settings</Button></Link>
           </CardContent>
         </Card>
@@ -173,7 +173,7 @@ export function CompanySettingsForm({ company }: { company: CurrentCompany }) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-slate-600">
-              Sign out of this browser session and return to the authentication screen.
+              Sign out and return to the sign-in screen.
             </p>
             <SignOutButton />
           </CardContent>

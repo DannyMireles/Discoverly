@@ -36,7 +36,7 @@ export default async function PayoutsPage() {
   return (
     <AppShell
       title="Payouts"
-      description={`Previous month is paid by the ${formatOrdinalDay(payByDay, "set")} after manual approval.`}
+      description={`Review and fund the previous month's payouts by the ${formatOrdinalDay(payByDay, "set")}.`}
     >
       {data.company ? (
         <PayoutsView

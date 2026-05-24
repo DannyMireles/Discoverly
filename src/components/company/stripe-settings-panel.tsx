@@ -7,9 +7,9 @@ import type { CurrentCompany } from "@/lib/company/current";
 export function StripeSettingsPanel({ company }: { company: CurrentCompany }) {
   return (
     <div className="space-y-6">
-      <Banner title="Stripe handles payout funding and affiliate transfers." tone="info">
-        Companies fund payout batches through Stripe Checkout. Affiliates connect Stripe once so Discoverly can send
-        their approved payouts automatically after the batch payment succeeds.
+      <Banner title="Stripe powers secure affiliate payouts." tone="info">
+        Fund payout batches through Stripe. Affiliates connect Stripe once so Discoverly can send approved payouts
+        after the batch payment succeeds.
       </Banner>
 
       <Card>
@@ -20,7 +20,7 @@ export function StripeSettingsPanel({ company }: { company: CurrentCompany }) {
           <div className="flex items-center gap-3 rounded-xl border border-[#c8dbb8] bg-[#e8f2de]/90 px-4 py-3">
             <CheckCircle2 className="h-5 w-5 shrink-0 text-[#3f8147]" aria-hidden />
             <div>
-              <p className="text-sm font-semibold text-[#2a5c30]">Company Stripe connection is not required</p>
+              <p className="text-sm font-semibold text-[#2a5c30]">Payout funding is ready</p>
               <p className="text-xs text-[#4a7a50]">Fund each approved {company.name} payout batch directly from the Payouts page.</p>
             </div>
           </div>
@@ -39,8 +39,8 @@ export function StripeSettingsPanel({ company }: { company: CurrentCompany }) {
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#525a48]">How it works</p>
             <ol className="mt-2 space-y-1 text-xs leading-5 text-[#3e4240]">
               <li>1. Prepare the current payout batch from eligible commissions.</li>
-              <li>2. Pay the batch total in Stripe Checkout.</li>
-              <li>3. After Stripe confirms payment, Discoverly transfers each amount to the connected affiliate.</li>
+              <li>2. Pay the batch total through Stripe.</li>
+              <li>3. After payment is confirmed, Discoverly transfers each amount to the connected affiliate.</li>
             </ol>
           </div>
         </CardContent>

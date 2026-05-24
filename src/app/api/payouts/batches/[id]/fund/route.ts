@@ -117,7 +117,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (notReady.length > 0) {
       return NextResponse.json(
         {
-          error: `Finish Stripe onboarding for ${notReady
+          error: `Complete Stripe setup for ${notReady
             .map((affiliate) => affiliate?.name ?? "an affiliate")
             .join(", ")} before funding this payout batch.`,
         },
@@ -177,7 +177,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       actorUserId: user!.id,
       source: "payouts",
       event: "batch_funding_checkout_created",
-      message: "Stripe Checkout funding session created for payout batch.",
+      message: "Stripe payment session created for payout batch.",
       metadata: {
         checkoutSessionId: session.id,
         amount: totalAmount,

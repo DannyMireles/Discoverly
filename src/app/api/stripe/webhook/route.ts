@@ -147,11 +147,11 @@ async function handlePayoutFundingFailed(session: Stripe.Checkout.Session) {
   const batchId = session.metadata.payoutBatchId;
   if (!batchId) throw new Error("Payout funding checkout session is missing payoutBatchId metadata.");
 
-  await markPayoutFundingFailed({
-    batchId,
-    checkoutSessionId: session.id,
-    message: "Stripe Checkout funding payment failed.",
-  });
+    await markPayoutFundingFailed({
+      batchId,
+      checkoutSessionId: session.id,
+      message: "Stripe payment was not completed.",
+    });
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {

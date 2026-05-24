@@ -47,11 +47,11 @@ export function CompanyOnboardingForm() {
         }),
       });
       const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Company onboarding failed.");
+      if (!response.ok) throw new Error(payload.error ?? "Company setup failed.");
       router.push("/company/settings/lodgify");
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Company onboarding failed.");
+      setMessage(error instanceof Error ? error.message : "Company setup failed.");
     } finally {
       setLoading(false);
     }
@@ -67,21 +67,21 @@ export function CompanyOnboardingForm() {
       </CardHeader>
       <CardContent className="grid gap-5 md:grid-cols-2">
         <div className="md:col-span-2">
-          <label className="text-sm font-medium text-slate-700">Invite token</label>
+          <label className="text-sm font-medium text-slate-700">Setup code</label>
           <PasswordInput
             value={form.inviteToken}
             onChange={(event) => update("inviteToken", event.target.value)}
-            placeholder="Enter your invite token"
+            placeholder="Enter your setup code"
             autoComplete="off"
           />
-          <p className="mt-1 text-xs text-slate-500">Required to create a new company. Contact the platform admin if you don&apos;t have one.</p>
+          <p className="mt-1 text-xs text-slate-500">Required to create a new company. Contact your Discoverly contact if you don&apos;t have one.</p>
         </div>
         <div>
           <label className="text-sm font-medium text-slate-700">Company name</label>
           <Input value={form.name} onChange={(event) => update("name", event.target.value)} />
         </div>
         <div>
-          <label className="text-sm font-medium text-slate-700">Company slug</label>
+          <label className="text-sm font-medium text-slate-700">Company link code</label>
           <Input value={form.slug} onChange={(event) => update("slug", event.target.value)} />
         </div>
         <div>
@@ -139,7 +139,7 @@ export function CompanyOnboardingForm() {
         <div className="md:col-span-2">
           <Button type="button" onClick={submit} disabled={loading}>
             <Save className="h-4 w-4" aria-hidden />
-            {loading ? "Saving..." : "Save Company and Continue"}
+            {loading ? "Saving..." : "Save and Continue"}
           </Button>
         </div>
       </CardContent>

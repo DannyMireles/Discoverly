@@ -11,8 +11,10 @@ export default async function LodgifySettingsPage() {
 
   if (!configured) {
     return (
-      <AppShell title="Lodgify Settings" description="Server-side Lodgify API configuration and sync controls.">
-        <Banner title="Supabase is not configured" tone="warning">Add `.env.local`, restart the dev server, then return here.</Banner>
+      <AppShell title="Lodgify Settings" description="Connect Lodgify and sync booking data.">
+        <Banner title="Lodgify settings are temporarily unavailable" tone="warning">
+          Please try again shortly or contact support if this continues.
+        </Banner>
       </AppShell>
     );
   }
@@ -23,8 +25,10 @@ export default async function LodgifySettingsPage() {
 
   if (!company) {
     return (
-      <AppShell title="Lodgify Settings" description="Server-side Lodgify API configuration and sync controls.">
-        <Banner title="Company onboarding required" tone="warning" action={<Link href="/company/onboarding"><Button>Start Onboarding</Button></Link>}>Create Zenful Cove before saving Lodgify credentials.</Banner>
+      <AppShell title="Lodgify Settings" description="Connect Lodgify and sync booking data.">
+        <Banner title="Company setup needed" tone="warning" action={<Link href="/company/onboarding"><Button>Start Setup</Button></Link>}>
+          Complete company setup before saving Lodgify credentials.
+        </Banner>
       </AppShell>
     );
   }

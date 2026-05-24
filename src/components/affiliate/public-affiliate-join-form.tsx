@@ -13,7 +13,7 @@ function describeAuthFailure(error: unknown): string {
     const msg = String((error as { message: string }).message);
     const status = (error as { status?: number }).status;
     if (status === 500) {
-      return `${msg} If custom SMTP is enabled in Supabase, check SMTP settings and Authentication logs.`;
+      return `${msg} Email delivery is temporarily unavailable. Please try again or contact support.`;
     }
     return msg;
   }

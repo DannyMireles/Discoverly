@@ -31,8 +31,8 @@ export default async function PublicAffiliateJoinPage({
       <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center py-8">
         <div className="w-full max-w-md">
           {!configured ? (
-            <Banner title="Supabase is not configured" tone="warning">
-              Add Supabase environment variables before accepting affiliate signups.
+            <Banner title="Affiliate signup is temporarily unavailable" tone="warning">
+              Please try again shortly or contact your host if this continues.
             </Banner>
           ) : !company ? (
             <Banner title="Affiliate program not found" tone="warning">

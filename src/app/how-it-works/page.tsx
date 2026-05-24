@@ -30,7 +30,7 @@ const affiliateSteps = [
   },
   {
     title: "Connect Stripe",
-    body: "Finish Stripe onboarding once so approved payouts can be sent to your account.",
+    body: "Complete Stripe setup once so approved payouts can be sent to your account.",
     icon: ShieldCheck,
   },
   {
@@ -45,7 +45,7 @@ const ownerSteps = [
   "Discoverly emails the company owner with the customer code and exact Lodgify promotion name.",
   "The owner manually creates that promotion in Lodgify. The name must match exactly.",
   "After Lodgify syncs paid bookings, Discoverly attributes commissions and prepares payout batches.",
-  "The owner reviews and funds a payout batch through Stripe Checkout.",
+  "The owner reviews and funds a payout batch through Stripe.",
   "After Stripe confirms funding, Discoverly sends transfers to connected affiliate Stripe accounts.",
 ];
 
@@ -64,8 +64,7 @@ export default function HowItWorksPage() {
               </h1>
               <p className="max-w-2xl text-base leading-7 text-[#40483f]">
                 Affiliates can join from a public link, receive a customer code, connect Stripe, and start sharing.
-                Company owners still add the matching promotion in Lodgify because Lodgify does not support this
-                promotion setup automatically in the current workflow.
+                Company owners still add the matching promotion in Lodgify because that step is completed manually.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

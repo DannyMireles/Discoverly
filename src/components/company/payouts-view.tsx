@@ -11,7 +11,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { formatCurrency } from "@/lib/utils/format";
 
-const tabs = ["Current batch", "Pending", "Approved", "Paid", "Failed", "Canceled/Reversed"] as const;
+const tabs = ["Current batch", "Pending", "Approved", "Paid", "Needs attention", "Canceled"] as const;
 
 type PayoutTab = (typeof tabs)[number];
 
@@ -84,8 +84,8 @@ export function PayoutsView({
     if (activeTab === "Pending") return groups.filter((group) => group.status === "pending" || group.status === "held");
     if (activeTab === "Approved") return groups.filter((group) => group.status === "approved");
     if (activeTab === "Paid") return groups.filter((group) => group.status === "paid");
-    if (activeTab === "Failed") return groups.filter((group) => group.status === "failed");
-    if (activeTab === "Canceled/Reversed") return groups.filter((group) => ["canceled", "failed"].includes(group.status));
+    if (activeTab === "Needs attention") return groups.filter((group) => group.status === "failed");
+    if (activeTab === "Canceled") return groups.filter((group) => group.status === "canceled");
     return [];
   }, [activeTab, groups]);
 
@@ -166,9 +166,9 @@ export function PayoutsView({
         <StatCard label="Paid This Month" value={formatCurrency(paidAmount)} icon={<Send className="h-5 w-5" />} tone="green" />
         <StatCard label="Failed" value={formatCurrency(failedAmount)} icon={<XCircle className="h-5 w-5" />} tone="slate" />
       </section>
-      <Banner title="Manual approval required">
-        Prepare the monthly batch, review each row, then fund it once through Stripe Checkout. After Stripe confirms
-        payment, Discoverly sends each affiliate transfer automatically.
+      <Banner title="Review and fund payouts">
+        Review eligible commissions, then fund the batch through Stripe. Once payment is confirmed, Discoverly sends
+        transfers to approved affiliate Stripe accounts.
       </Banner>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={() => void createCurrentBatch()} disabled={batchLoading || !companyId}>
@@ -192,13 +192,13 @@ export function PayoutsView({
             : batchFunded
               ? "Batch Funded"
               : heldAffiliates.length > 0
-                ? "Release Holds to Fund"
+                ? "Release Holds to Continue"
                 : `Fund & Pay ${formatCurrency(fundableAmount, currencyCode)}`}
         </Button>
         {currentBatch ? (
           <div className="text-sm text-slate-600">
-            Batch: <StatusBadge status={currentBatch.status} />{" "}
-            <span className="ml-2">Funding: <StatusBadge status={formatFundingStatus(currentBatch.fundingStatus)} /></span>
+            Batch status: <StatusBadge status={currentBatch.status} />{" "}
+            <span className="ml-2">Payment: <StatusBadge status={formatFundingStatus(currentBatch.fundingStatus)} /></span>
           </div>
         ) : null}
         {message ? (
@@ -208,12 +208,12 @@ export function PayoutsView({
         ) : null}
       </div>
       {batchFundingStarted ? (
-        <Banner title="Stripe payment is pending." tone="warning">
-          Finish the open Stripe Checkout payment, or start funding again if that checkout session expired.
+        <Banner title="Finish payout payment" tone="warning">
+          Complete the open Stripe payment, or start again if the payment page expired.
         </Banner>
       ) : null}
       {currentBatch?.fundingError ? (
-        <Banner title="Payout funding failed." tone="warning">
+        <Banner title="Payout payment was not completed" tone="warning">
           {currentBatch.fundingError}
         </Banner>
       ) : null}
@@ -236,16 +236,16 @@ export function PayoutsView({
         </CardHeader>
         <CardContent className="p-0">
           {visibleGroups.length === 0 ? (
-            <div className="p-8 text-sm text-slate-500">No payout rows in this tab yet.</div>
+            <div className="p-8 text-sm text-slate-500">No payouts to show in this view yet.</div>
           ) : (
             <Table>
               <THead>
                 <TR>
                   <TH>Affiliate</TH>
-                  <TH>Stripe Status</TH>
-                  <TH>Eligible Bookings</TH>
-                  <TH>Revenue Driven</TH>
-                  <TH>Commission Amount</TH>
+                  <TH>Affiliate Stripe</TH>
+                  <TH>Eligible bookings</TH>
+                  <TH>Booking revenue</TH>
+                  <TH>Commission</TH>
                   <TH>Status</TH>
                   <TH>Action</TH>
                 </TR>
@@ -302,7 +302,7 @@ function formatFundingStatus(status: string) {
     case "not_started":
       return "Not Started";
     case "checkout_created":
-      return "Checkout Created";
+      return "Payment Started";
     case "paid":
       return "Paid";
     case "failed":

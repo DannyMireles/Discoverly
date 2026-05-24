@@ -11,11 +11,17 @@ export default async function NewAffiliatePage() {
   return (
     <AppShell title="Add Affiliate" description="Generate customer code, Lodgify promotion name, and invite link.">
       {!configured ? (
-        <Banner title="Supabase is not configured" tone="warning">Add `.env.local`, restart the dev server, then return here.</Banner>
+        <Banner title="Affiliate setup is temporarily unavailable" tone="warning">
+          Please try again shortly or contact support if this continues.
+        </Banner>
       ) : !user ? (
-        <Banner title="Sign in required" tone="warning" action={<Link href="/auth"><Button>Go to Auth</Button></Link>}>Affiliate creation is tied to your Supabase account.</Banner>
+        <Banner title="Sign in required" tone="warning" action={<Link href="/auth"><Button>Sign In</Button></Link>}>
+          Sign in before adding affiliates.
+        </Banner>
       ) : !company ? (
-        <Banner title="Company onboarding required" tone="warning" action={<Link href="/company/onboarding"><Button>Start Onboarding</Button></Link>}>Create Zenful Cove before adding affiliates.</Banner>
+        <Banner title="Company setup needed" tone="warning" action={<Link href="/company/onboarding"><Button>Start Setup</Button></Link>}>
+          Complete company setup before adding affiliates.
+        </Banner>
       ) : (
         <AddAffiliateForm company={company} />
       )}

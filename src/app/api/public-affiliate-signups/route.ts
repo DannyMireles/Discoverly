@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "This email already has an affiliate record for this company. Ask the company owner to resend your invite.",
+          "This email is already connected to this affiliate program. Ask the company owner to resend your invite.",
       },
       { status: 409 },
     );

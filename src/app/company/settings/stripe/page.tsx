@@ -17,8 +17,8 @@ export default async function StripeSettingsPage({
   if (!configured) {
     return (
       <AppShell title="Stripe Settings" description="Configure affiliate payout funding.">
-        <Banner title="Supabase is not configured" tone="warning">
-          Add environment variables and restart the dev server.
+        <Banner title="Account services are temporarily unavailable" tone="warning">
+          Please try again shortly or contact support if this continues.
         </Banner>
       </AppShell>
     );
@@ -31,24 +31,24 @@ export default async function StripeSettingsPage({
   if (!company) {
     return (
       <AppShell title="Stripe Settings" description="Configure affiliate payout funding.">
-        <Banner title="Company onboarding required" tone="warning" action={<Link href="/company/onboarding"><Button>Start Onboarding</Button></Link>}>
-          Complete company onboarding before connecting Stripe.
+        <Banner title="Company setup needed" tone="warning" action={<Link href="/company/onboarding"><Button>Start Setup</Button></Link>}>
+          Complete company setup before managing payout settings.
         </Banner>
       </AppShell>
     );
   }
 
   return (
-    <AppShell title="Stripe Settings" description="Fund payout batches through Stripe Checkout.">
+    <AppShell title="Stripe Settings" description="Manage secure payout funding through Stripe.">
       <div className="space-y-4">
         {params.connected === "true" && (
-          <Banner title="Stripe connected successfully." tone="success">
-            This legacy connection is no longer required for payout funding.
+          <Banner title="Stripe setup is complete." tone="success">
+            You can now review and fund payout batches from the Payouts page.
           </Banner>
         )}
         {params.incomplete === "true" && (
           <Banner title="Stripe setup needs a few more details." tone="warning">
-            Company Stripe onboarding is no longer required. Use the Payouts page to fund payout batches.
+            Return to the Payouts page when you are ready to fund a batch.
           </Banner>
         )}
         {params.error && (

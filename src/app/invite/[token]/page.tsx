@@ -31,8 +31,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     <AppShell title={`Accept ${companyName} invite`} description="Create your affiliate account." hideNav>
       <div className="mx-auto w-full max-w-xl space-y-5">
         {!configured ? (
-          <Banner title="Supabase is not configured" tone="warning">
-            Add Supabase environment variables before accepting invites.
+          <Banner title="Invites are temporarily unavailable" tone="warning">
+            Please try again shortly or contact your host if this continues.
           </Banner>
         ) : !affiliate ? (
           <Banner title="Invite not found" tone="warning">

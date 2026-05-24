@@ -13,10 +13,8 @@ export default async function AuthPage({
     <main className="auth-scene flex min-h-screen items-center justify-center p-6">
       <div className="auth-scene-content w-full max-w-lg space-y-6">
         {!isSupabaseConfigured() && (
-          <Banner title="Supabase is not configured" tone="warning">
-            Add <code>NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-            <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> to{" "}
-            <code>.env.local</code>, then restart the dev server.
+          <Banner title="Sign in is temporarily unavailable" tone="warning">
+            Please try again shortly or contact support if this continues.
           </Banner>
         )}
         <AuthForm redirectTo={params.redirectTo} />

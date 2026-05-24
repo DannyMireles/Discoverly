@@ -21,7 +21,7 @@ const requestSchema = z.object({
 export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid company onboarding request." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid company setup request." }, { status: 400 });
   }
 
   const expectedToken = process.env.COMPANY_INVITE_TOKEN;
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Sign in before onboarding a company." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in before setting up a company." }, { status: 401 });
   }
 
   const admin = createSupabaseAdminClient();

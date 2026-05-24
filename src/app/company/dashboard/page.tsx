@@ -55,36 +55,36 @@ export default async function CompanyDashboardPage({
   return (
     <AppShell
       title="Company Dashboard"
-      description="Fully paid, matched Lodgify bookings only."
+      description="Affiliate-attributed paid bookings from Lodgify."
       actions={data.company && isDemoToolsEnabled() ? <DemoDataButtons companyId={data.company.id} /> : null}
     >
       <div className="space-y-8">
         {!data.configured ? (
-          <Banner title="Supabase is not configured" tone="warning">
-            Add `.env.local`, restart the dev server, then return here.
+          <Banner title="Dashboard is temporarily unavailable" tone="warning">
+            Please try again shortly or contact support if this continues.
           </Banner>
         ) : !data.user ? (
           <Banner
             title="Sign in required"
             tone="warning"
-            action={<Link href="/auth"><Button>Go to Auth</Button></Link>}
+            action={<Link href="/auth"><Button>Sign In</Button></Link>}
           >
-            Create your admin account before onboarding Zenful Cove.
+            Sign in before completing company setup.
           </Banner>
         ) : !data.company ? (
           <Banner
             title="Onboarding is not done"
             tone="warning"
-            action={<Link href="/company/onboarding"><Button>Start Onboarding</Button></Link>}
+            action={<Link href="/company/onboarding"><Button>Start Setup</Button></Link>}
           >
-            Create Zenful Cove and connect your services.
+            Complete company setup and connect your services.
           </Banner>
         ) : data.affiliates.length === 0 ? (
           <Banner
             title="Invite your first affiliate to start tracking direct booking revenue."
             action={<Link href="/company/affiliates/new"><Button>New Affiliate</Button></Link>}
           >
-            Create the affiliate record, confirm setup, then send the invite when you are ready.
+            Add the affiliate, confirm their booking code, then send the invite when you are ready.
           </Banner>
         ) : null}
 

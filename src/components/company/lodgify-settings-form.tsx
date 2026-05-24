@@ -18,8 +18,8 @@ export function LodgifySettingsForm({ company }: { company: CurrentCompany }) {
   const [keySaved, setKeySaved] = useState(Boolean(company.lodgify_connected));
   const [message, setMessage] = useState(
     company.lodgify_connected
-      ? "Lodgify key already saved. Test it or continue to the next step."
-      : "No key saved in this browser session.",
+      ? "Lodgify key already saved. Check the connection or continue to the next step."
+      : "No Lodgify key has been saved yet.",
   );
 
   async function saveKey() {
@@ -51,7 +51,7 @@ export function LodgifySettingsForm({ company }: { company: CurrentCompany }) {
   async function testConnection() {
     if (!apiKey) {
       setStatus("error");
-      setMessage("Paste a Lodgify API key before testing.");
+      setMessage("Paste a Lodgify API key before checking the connection.");
       return;
     }
 
@@ -67,7 +67,7 @@ export function LodgifySettingsForm({ company }: { company: CurrentCompany }) {
         throw new Error(payload.error ?? "Lodgify connection failed.");
       }
       setStatus("success");
-      setMessage("Lodgify connection test succeeded.");
+      setMessage("Lodgify connection check succeeded.");
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Lodgify connection failed.");
@@ -77,7 +77,8 @@ export function LodgifySettingsForm({ company }: { company: CurrentCompany }) {
   return (
     <div className="space-y-6">
       <Banner title="Your Lodgify key stays private." tone="info">
-        Discoverly stores your key encrypted and never shows it again. Use Test Connection to confirm Lodgify accepts the key, then Save to keep it.
+        Discoverly stores your key encrypted and never shows it again. Check the connection to confirm Lodgify accepts
+        the key, then save it.
       </Banner>
       <Card>
         <CardHeader><CardTitle>API Key</CardTitle></CardHeader>
@@ -94,7 +95,7 @@ export function LodgifySettingsForm({ company }: { company: CurrentCompany }) {
             </Button>
             <Button type="button" onClick={testConnection} disabled={status === "testing"}>
               {status === "testing" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-              Test Connection
+              Check Connection
             </Button>
             <Button type="button" variant="secondary" disabled={!apiKey}>
               Sync Properties

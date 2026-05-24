@@ -15,12 +15,14 @@ export default async function AffiliatesPage() {
   return (
     <AppShell
       title="Affiliates"
-      description="Invite-only affiliate records and Lodgify promotion setup."
+      description="Invite affiliates and manage Lodgify promotion setup."
       actions={<Link href="/company/affiliates/new"><Button><Plus className="h-4 w-4" aria-hidden />New Affiliate</Button></Link>}
     >
       <div className="space-y-6">
         {!data.company ? (
-          <Banner title="Company onboarding required" tone="warning" action={<Link href="/company/onboarding"><Button>Start Onboarding</Button></Link>}>Create Zenful Cove before adding affiliates.</Banner>
+          <Banner title="Company setup needed" tone="warning" action={<Link href="/company/onboarding"><Button>Start Setup</Button></Link>}>
+            Complete company setup before adding affiliates.
+          </Banner>
         ) : null}
         {data.company ? <GenericInviteLinkCard companySlug={data.company.slug} /> : null}
         <Card>

@@ -54,13 +54,13 @@ export default async function AffiliateDashboardPage({
           <Banner
             title="Sign in required"
             tone="warning"
-            action={<Link href="/auth"><Button>Go to Auth</Button></Link>}
+            action={<Link href="/auth"><Button>Sign In</Button></Link>}
           >
             Accept your invite or sign in to see affiliate data.
           </Banner>
         ) : !data.affiliate || !data.promotion ? (
-          <Banner title="No affiliate profile linked yet" tone="warning">
-            Accept an invite link to connect your account to an affiliate record.
+          <Banner title="Affiliate account not connected yet" tone="warning">
+            Accept your invite link to finish connecting your affiliate account.
           </Banner>
         ) : !data.affiliate.stripe_connected ? (
           <AffiliateStripeConnectBanner

@@ -35,7 +35,7 @@ export default async function AffiliateSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-slate-600">
-              Sign out of this browser session and return to the authentication screen.
+              Sign out and return to the sign-in screen.
             </p>
             <SignOutButton />
           </CardContent>
