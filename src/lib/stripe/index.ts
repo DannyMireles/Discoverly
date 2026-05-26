@@ -2,6 +2,8 @@ import Stripe from "stripe";
 import { requiredEnv } from "@/lib/supabase/server";
 
 const STRIPE_API_VERSION = "2025-08-27.basil" as const;
+const DEFAULT_PAYOUT_FUNDING_FEE_BPS = 290;
+const DEFAULT_PAYOUT_FUNDING_FIXED_FEE_CENTS = 30;
 
 type AffiliateCapability = "transfers" | "card_payments";
 
@@ -184,29 +186,49 @@ export async function createPayoutFundingCheckoutSession({
   cancelUrl: string;
 }) {
   const stripe = createStripeClient();
-  const cents = Math.round(amount * 100);
+  const payoutCents = Math.round(amount * 100);
+  const fundingCents = calculatePayoutFundingGrossAmountCents(payoutCents);
+  const processingReserveCents = fundingCents - payoutCents;
   const transferGroup = `payout_batch_${batchId}`;
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+    {
+      quantity: 1,
+      price_data: {
+        currency: currency.toLowerCase(),
+        unit_amount: payoutCents,
+        product_data: {
+          name: `${companyName} affiliate payout funding`,
+          description: "Funds an approved Discoverly affiliate payout batch.",
+        },
+      },
+    },
+  ];
+
+  if (processingReserveCents > 0) {
+    lineItems.push({
+      quantity: 1,
+      price_data: {
+        currency: currency.toLowerCase(),
+        unit_amount: processingReserveCents,
+        product_data: {
+          name: "Stripe processing reserve",
+          description: "Covers card processing costs so the full affiliate payout can be transferred.",
+        },
+      },
+    });
+  }
 
   return stripe.checkout.sessions.create({
     mode: "payment",
     customer_email: customerEmail ?? undefined,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: currency.toLowerCase(),
-          unit_amount: cents,
-          product_data: {
-            name: `${companyName} affiliate payout funding`,
-            description: "Funds an approved Discoverly affiliate payout batch.",
-          },
-        },
-      },
-    ],
+    line_items: lineItems,
     metadata: {
       purpose: "affiliate_payout_funding",
       payoutBatchId: batchId,
       companyId,
+      payoutAmountCents: String(payoutCents),
+      fundingAmountCents: String(fundingCents),
+      processingReserveCents: String(processingReserveCents),
     },
     payment_intent_data: {
       transfer_group: transferGroup,
@@ -214,11 +236,27 @@ export async function createPayoutFundingCheckoutSession({
         purpose: "affiliate_payout_funding",
         payoutBatchId: batchId,
         companyId,
+        payoutAmountCents: String(payoutCents),
+        fundingAmountCents: String(fundingCents),
+        processingReserveCents: String(processingReserveCents),
       },
     },
     success_url: successUrl,
     cancel_url: cancelUrl,
   });
+}
+
+function calculatePayoutFundingGrossAmountCents(payoutCents: number) {
+  const variableFeeBps = Number(
+    process.env.STRIPE_PAYOUT_FUNDING_FEE_BPS ?? DEFAULT_PAYOUT_FUNDING_FEE_BPS,
+  );
+  const fixedFeeCents = Number(
+    process.env.STRIPE_PAYOUT_FUNDING_FIXED_FEE_CENTS ?? DEFAULT_PAYOUT_FUNDING_FIXED_FEE_CENTS,
+  );
+  const feeMultiplier = 1 - variableFeeBps / 10_000;
+  if (feeMultiplier <= 0) return payoutCents + fixedFeeCents;
+
+  return Math.ceil((payoutCents + fixedFeeCents) / feeMultiplier);
 }
 
 export async function getPaymentIntentLatestChargeId(paymentIntentId: string) {

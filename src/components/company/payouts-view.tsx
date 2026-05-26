@@ -168,7 +168,8 @@ export function PayoutsView({
       </section>
       <Banner title="Review and fund payouts">
         Review eligible commissions, then fund the batch through Stripe. Once payment is confirmed, Discoverly sends
-        transfers to approved affiliate Stripe accounts.
+        transfers to approved affiliate Stripe accounts. Stripe Checkout includes a processing reserve so the full
+        approved payout amount can be transferred.
       </Banner>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" onClick={() => void createCurrentBatch()} disabled={batchLoading || !companyId}>
