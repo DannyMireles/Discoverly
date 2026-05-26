@@ -3,6 +3,37 @@ import { requiredEnv } from "@/lib/supabase/server";
 
 const STRIPE_API_VERSION = "2025-08-27.basil" as const;
 
+type AffiliateCapability = "transfers" | "card_payments";
+
+export type AffiliateStripeAccountOverview = {
+  id: string;
+  email: string | null;
+  type: Stripe.Account.Type;
+  country: string | null;
+  defaultCurrency: string | null;
+  businessType: Stripe.Account.BusinessType | null;
+  createdAt: string | null;
+  detailsSubmitted: boolean;
+  payoutsEnabled: boolean;
+  chargesEnabled: boolean;
+  capabilities: Record<AffiliateCapability, string>;
+  disabledReason: string | null;
+  currentDeadline: string | null;
+  currentlyDue: string[];
+  pastDue: string[];
+  eventuallyDue: string[];
+  pendingVerification: string[];
+  requirementErrors: string[];
+  payoutSchedule: {
+    interval: string | null;
+    delayDays: number | null;
+    monthlyPayoutDays: number[];
+    weeklyPayoutDays: string[];
+  };
+  payoutDestination: string | null;
+  dashboardDisplayName: string | null;
+};
+
 /**
  * "live" only on Vercel production deploys; everything else (preview, local, staging) uses test keys.
  * Override with STRIPE_MODE=live|test if you need to force a mode.
@@ -48,6 +79,65 @@ export function isAffiliateConnectAccountReady(account: Stripe.Account) {
     Boolean(account.payouts_enabled) &&
     account.capabilities?.transfers === "active"
   );
+}
+
+export async function getAffiliateStripeAccountOverview(accountId: string): Promise<AffiliateStripeAccountOverview> {
+  const stripe = createStripeClient();
+  const account = await stripe.accounts.retrieve(accountId);
+  const requirements = account.requirements;
+  const payoutSchedule = account.settings?.payouts?.schedule;
+  const payoutDestination = account.external_accounts?.data[0];
+
+  return {
+    id: account.id,
+    email: account.email,
+    type: account.type,
+    country: account.country ?? null,
+    defaultCurrency: account.default_currency ?? null,
+    businessType: account.business_type ?? null,
+    createdAt: account.created ? new Date(account.created * 1000).toISOString() : null,
+    detailsSubmitted: Boolean(account.details_submitted),
+    payoutsEnabled: Boolean(account.payouts_enabled),
+    chargesEnabled: Boolean(account.charges_enabled),
+    capabilities: {
+      transfers: account.capabilities?.transfers ?? "unknown",
+      card_payments: account.capabilities?.card_payments ?? "unknown",
+    },
+    disabledReason: requirements?.disabled_reason ?? null,
+    currentDeadline: requirements?.current_deadline
+      ? new Date(requirements.current_deadline * 1000).toISOString()
+      : null,
+    currentlyDue: requirements?.currently_due ?? [],
+    pastDue: requirements?.past_due ?? [],
+    eventuallyDue: requirements?.eventually_due ?? [],
+    pendingVerification: requirements?.pending_verification ?? [],
+    requirementErrors: requirements?.errors?.map((error) => error.reason) ?? [],
+    payoutSchedule: {
+      interval: payoutSchedule?.interval ?? null,
+      delayDays: payoutSchedule?.delay_days ?? null,
+      monthlyPayoutDays: payoutSchedule?.monthly_payout_days ?? [],
+      weeklyPayoutDays: payoutSchedule?.weekly_payout_days ?? [],
+    },
+    payoutDestination: formatPayoutDestination(payoutDestination),
+    dashboardDisplayName: account.settings?.dashboard?.display_name ?? null,
+  };
+}
+
+export async function createExpressDashboardLoginLink(accountId: string) {
+  const stripe = createStripeClient();
+  return stripe.accounts.createLoginLink(accountId);
+}
+
+function formatPayoutDestination(destination: Stripe.ExternalAccount | undefined) {
+  if (!destination) return null;
+
+  if (destination.object === "bank_account") {
+    const bankName = destination.bank_name ?? "Bank account";
+    return `${bankName} ending in ${destination.last4}`;
+  }
+
+  const brand = destination.brand === "Unknown" ? "Debit card" : destination.brand;
+  return `${brand} ending in ${destination.last4}`;
 }
 
 export async function createCompanyConnectAccount(email?: string | null, businessName?: string | null) {
