@@ -1,5 +1,5 @@
 import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
-import { sendAffiliateTransfer } from "@/lib/stripe";
+import { getPaymentIntentLatestChargeId, sendAffiliateTransfer } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const PROCESSABLE_PAYOUT_STATUSES = ["pending", "approved", "failed"] as const;
@@ -45,13 +45,19 @@ export async function processPayoutTransfer({
 
   const { data: batch, error: batchError } = await admin
     .from("payout_batches")
-    .select("id, funding_status, stripe_payment_charge_id")
+    .select("id, funding_status, stripe_payment_charge_id, stripe_payment_intent_id")
     .eq("id", payout.payout_batch_id)
     .single();
 
   if (batchError) throw new Error(batchError.message);
 
-  const transferSourceTransaction = sourceTransaction ?? (batch.stripe_payment_charge_id as string | null);
+  const transferSourceTransaction = await resolveTransferSourceTransaction({
+    admin,
+    payoutBatchId: payout.payout_batch_id as string,
+    sourceTransaction,
+    storedChargeId: batch.stripe_payment_charge_id as string | null,
+    paymentIntentId: batch.stripe_payment_intent_id as string | null,
+  });
   if (!transferSourceTransaction) {
     await logOperationalEvent({
       companyId: payout.company_id as string,
@@ -233,6 +239,37 @@ export async function processPayoutTransfer({
 
     throw error;
   }
+}
+
+async function resolveTransferSourceTransaction({
+  admin,
+  payoutBatchId,
+  sourceTransaction,
+  storedChargeId,
+  paymentIntentId,
+}: {
+  admin: SupabaseAdmin;
+  payoutBatchId: string;
+  sourceTransaction?: string | null;
+  storedChargeId?: string | null;
+  paymentIntentId?: string | null;
+}) {
+  const candidate = sourceTransaction ?? storedChargeId ?? null;
+  if (candidate?.startsWith("ch_")) return candidate;
+
+  if (!paymentIntentId) return candidate;
+
+  const chargeId = await getPaymentIntentLatestChargeId(paymentIntentId);
+  if (!chargeId) return candidate;
+
+  if (chargeId !== storedChargeId) {
+    await admin
+      .from("payout_batches")
+      .update({ stripe_payment_charge_id: chargeId })
+      .eq("id", payoutBatchId);
+  }
+
+  return chargeId;
 }
 
 export async function processFundedPayoutBatch({

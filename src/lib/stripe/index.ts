@@ -223,13 +223,20 @@ export async function createPayoutFundingCheckoutSession({
 
 export async function getPaymentIntentLatestChargeId(paymentIntentId: string) {
   const stripe = createStripeClient();
+  const charges = await stripe.charges.list({
+    payment_intent: paymentIntentId,
+    limit: 1,
+  });
+  const latestCharge = charges.data[0];
+  if (latestCharge) return latestCharge.id;
+
   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
     expand: ["latest_charge"],
   });
-  const latestCharge = paymentIntent.latest_charge;
+  const expandedLatestCharge = paymentIntent.latest_charge;
 
-  if (!latestCharge) return null;
-  return typeof latestCharge === "string" ? latestCharge : latestCharge.id;
+  if (!expandedLatestCharge) return null;
+  return typeof expandedLatestCharge === "string" ? expandedLatestCharge : expandedLatestCharge.id;
 }
 
 export async function sendAffiliateTransfer({
