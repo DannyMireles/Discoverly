@@ -35,10 +35,9 @@ export async function createAffiliateConnectAccount(email: string) {
     country: affiliateAccountCountry(),
     email,
     capabilities: {
+      // US-to-US Express accounts must onboard under Stripe's full terms, which requires card_payments.
+      card_payments: { requested: true },
       transfers: { requested: true },
-    },
-    tos_acceptance: {
-      service_agreement: "recipient",
     },
   });
 }
