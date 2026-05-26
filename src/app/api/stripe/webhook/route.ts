@@ -4,6 +4,7 @@ import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
 import {
   createStripeClient,
   getPaymentIntentLatestChargeId,
+  isAffiliateConnectAccountReady,
 } from "@/lib/stripe";
 import {
   markPayoutFundingFailed,
@@ -157,10 +158,6 @@ async function handlePayoutFundingFailed(session: Stripe.Checkout.Session) {
 async function handleAccountUpdated(account: Stripe.Account) {
   const admin = createSupabaseAdminClient();
   const payoutsEnabled = Boolean(account.payouts_enabled);
-  const fullyOnboarded =
-    Boolean(account.details_submitted) &&
-    payoutsEnabled &&
-    Boolean(account.charges_enabled ?? true);
 
   const { data: affiliate, error: affiliateLookupError } = await admin
     .from("affiliates")
@@ -171,6 +168,8 @@ async function handleAccountUpdated(account: Stripe.Account) {
   if (affiliateLookupError) throw new Error(affiliateLookupError.message);
 
   if (affiliate) {
+    const fullyOnboarded = isAffiliateConnectAccountReady(account);
+
     const { error } = await admin
       .from("affiliates")
       .update({
@@ -190,6 +189,7 @@ async function handleAccountUpdated(account: Stripe.Account) {
       metadata: {
         stripeAccountId: account.id,
         payoutsEnabled,
+        transfersCapability: account.capabilities?.transfers ?? null,
         fullyOnboarded,
       },
     });
@@ -204,6 +204,11 @@ async function handleAccountUpdated(account: Stripe.Account) {
   if (companyLookupError) throw new Error(companyLookupError.message);
 
   if (company) {
+    const fullyOnboarded =
+      Boolean(account.details_submitted) &&
+      payoutsEnabled &&
+      Boolean(account.charges_enabled ?? true);
+
     const { error } = await admin
       .from("companies")
       .update({
@@ -236,7 +241,8 @@ async function handleAccountUpdated(account: Stripe.Account) {
       metadata: {
         stripeAccountId: account.id,
         payoutsEnabled,
-        fullyOnboarded,
+        chargesEnabled: Boolean(account.charges_enabled ?? true),
+        transfersCapability: account.capabilities?.transfers ?? null,
       },
     });
   }

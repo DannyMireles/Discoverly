@@ -24,15 +24,31 @@ export function createStripeClient() {
   });
 }
 
+function affiliateAccountCountry() {
+  return process.env.STRIPE_AFFILIATE_ACCOUNT_COUNTRY ?? "US";
+}
+
 export async function createAffiliateConnectAccount(email: string) {
   const stripe = createStripeClient();
   return stripe.accounts.create({
     type: "express",
+    country: affiliateAccountCountry(),
     email,
     capabilities: {
       transfers: { requested: true },
     },
+    tos_acceptance: {
+      service_agreement: "recipient",
+    },
   });
+}
+
+export function isAffiliateConnectAccountReady(account: Stripe.Account) {
+  return (
+    Boolean(account.details_submitted) &&
+    Boolean(account.payouts_enabled) &&
+    account.capabilities?.transfers === "active"
+  );
 }
 
 export async function createCompanyConnectAccount(email?: string | null, businessName?: string | null) {

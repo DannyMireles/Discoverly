@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { errorMetadata, logOperationalEvent } from "@/lib/ops/events";
-import { createStripeClient } from "@/lib/stripe";
+import { createStripeClient, isAffiliateConnectAccountReady } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const paramsSchema = z.object({
@@ -46,10 +46,7 @@ export async function GET(request: Request) {
     const account = await stripe.accounts.retrieve(affiliate.stripe_account_id);
 
     const payoutsEnabled = Boolean(account.payouts_enabled);
-    const fullyOnboarded =
-      Boolean(account.details_submitted) &&
-      payoutsEnabled &&
-      Boolean(account.charges_enabled ?? true);
+    const fullyOnboarded = isAffiliateConnectAccountReady(account);
 
     await admin
       .from("affiliates")
@@ -68,6 +65,7 @@ export async function GET(request: Request) {
       metadata: {
         accountId: affiliate.stripe_account_id,
         payoutsEnabled,
+        transfersCapability: account.capabilities?.transfers ?? null,
         fullyOnboarded,
       },
     });
